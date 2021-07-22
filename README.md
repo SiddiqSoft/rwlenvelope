@@ -1,4 +1,4 @@
-RWLEnvelope : A simple read-writer lock wrapper for modern C++
+RWLEnvelope : A simple read-writer lock envelope
 -------------------------------------------
 
 [![CodeQL](https://github.com/SiddiqSoft/RWLEnvelope/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/SiddiqSoft/RWLEnvelope/actions/workflows/codeql-analysis.yml)
@@ -12,14 +12,17 @@ RWLEnvelope : A simple read-writer lock wrapper for modern C++
 - Avoid re-implementing the rw-lock; standard C++ (since C++14) has a good reader-writer lock implementation.
 - Provide a simple, convenience layer atop the underlying [`std::unique_lock`](https://en.cppreference.com/w/cpp/thread/unique_lock) and [`std::shared_lock`](https://en.cppreference.com/w/cpp/thread/shared_lock) access to some type.
 
-> **WE DO NOT IMPLEMENT** a read-writer lock, rather we provide a simple pattern
-> where the most frequent use of the underlying facility is in a neat package.
-> NOT a wrapper, but an envelope.
+<p align="right" width="50%">
+<b>WE DO NOT IMPLEMENT</b> a read-writer lock; the standard C++ library has one.<br/>We provide a header-only package simplifying the locking code around thread-safe access to your underlying type.
+<br/>
+<i>NOT a wrapper; an envelope.</i>
+</p>
 
 # Requirements
-You must be able to use `<shared_mutex>` and `<mutex>`
-
-The build and tests are for Visual Studio 2019 under x64.
+- You must be able to use [`<shared_mutex>`](https://en.cppreference.com/w/cpp/thread/shared_mutex) and [`<mutex>`](https://en.cppreference.com/w/cpp/thread/mutex).
+- Minimal target is `C++17`.
+- The build and tests are for Visual Studio 2019 under x64.
+- We use [`nlohmann::json`](https://github.com/nlohmann/json) only in our tests and the library is aware to provide a conversion operator if library is detected.
 
 # Usage
 
@@ -77,6 +80,7 @@ TEST(examples, AssignWithDirectLocks)
 }
 ```
 
+Additional [examples](tests/examples.cpp).
 
 
 <small align="right">
