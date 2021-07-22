@@ -14,7 +14,7 @@ RWLEnvelope : A simple read-writer lock wrapper for modern C++
 
 > **WE DO NOT IMPLEMENT** a read-writer lock, rather we provide a simple pattern
 > where the most frequent use of the underlying facility is in a neat package.
-
+> NOT a wrapper, but an envelope.
 
 # Requirements
 You must be able to use `<shared_mutex>` and `<mutex>`
@@ -25,50 +25,56 @@ The build and tests are for Visual Studio 2019 under x64.
 
 - Use the nuget [SiddiqSoft.RWLEnvelope](https://www.nuget.org/packages/SiddiqSoft.RWLEnvelope/)
 - Copy paste..whatever works.
+- The idea is to not "wrap" the underlying type forcing you to either inherit or re-implement the types but to take advantage of the underlying type's interface whilst ensuring that we have the necessary locks.
 - Two methods:
-  -- Observer/mutator model with callback and custom return
-- 
+  - Observer/mutator model with callback and custom return to limit access and to focus the where and how to access the underlying type.
+  - Take advantage of [init-statement in if-statement](https://en.cppreference.com/w/cpp/language/if) to get the contained object within a lock and have the compiler auto-release once we leave scope.
+- A sample implementation (say you want a std::map with reader-writer lock)
+  - `using RWLMap = siddiqsoft::RWLEnvelope<std::map>;`
+
 
 ```cpp
 #include "gtest/gtest.h"
-
 #include "nlohmann/json.hpp"
-#include "../src/RWLEnvelope.hpp"
+#include "siddiqsoft/RWLEnvelope.hpp"
 
 
-TEST(examples, WithCallbacks)
+TEST(examples, AssignWithCallbacks)
 {
-	siddiqsoft::RWLEnvelope<nlohmann::json> docl({{"foo", "bar"}, {"few", "lar"}});
+	siddiqsoft::RWLEnvelope<nlohmann::json> docl; // we will assign later
+	nlohmann::json                          doc2 {{"baa", 0x0baa}, {"fee", 0x0fee}, {"bee", 0x0bee}};
 
-	// Check we have pre-change value..
-	EXPECT_EQ("bar", docl.observe<std::string>([](const auto& doc) { return doc.value("foo", ""); }));
-
-	// Modify the item
-	docl.mutate<void>([](auto& doc) { doc["foo"] = "bare"; });
+	// Move assign here post init
+	docl.reassign(std::move(doc2));
+	// Must be empty since we moved it into the envelope
+	EXPECT_TRUE(doc2.empty());
 
 	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
-	EXPECT_TRUE(docl.observe<bool>([](const auto& doc) { return doc.value("foo", "").find("bare") == 0; }));
+	EXPECT_TRUE(docl.observe<bool>([](const auto& doc) -> bool {
+		return (doc.value("fee", 0xfa17) == 0x0fee) && (doc.value("baa", 0xfa17) == 0x0baa) && (doc.value("bee", 0xfa17) == 0x0bee);
+	}));
 
-	// Check to make sure that the statistics match
-	auto info = nlohmann::json(docl);
-	EXPECT_EQ(1, info.value("readWriteActions", 0));
+	EXPECT_EQ(3, docl.observe<size_t>([](const auto& doc) { return doc.size(); }));
 }
 
 
-TEST(examples, WithDirectLocks)
+TEST(examples, AssignWithDirectLocks)
 {
 	siddiqsoft::RWLEnvelope<nlohmann::json> docl({{"foo", "bar"}, {"few", "lar"}});
+	nlohmann::json                          doc2 {{"baa", 0x0baa}, {"fee", 0x0fee}, {"bee", 0x0bee}};
 
-	// Check we have pre-change value..
-	if (const auto& [doc, rl] = docl.readLock(); rl) { EXPECT_EQ("bar", doc.value("foo", "")); }
+	// Previous document has two items..
+	if (auto const& [doc, rl] = docl.readLock(); rl) { EXPECT_EQ(2, doc.size()); }
 
-	// Modify the item
-	if (auto& [doc, wl] = docl.writeLock(); wl) { doc["foo"] = "bare"; };
+	// Modify the item (replace the initial with new)
+	if (auto [doc, wl] = docl.writeLock(); wl) { doc = std::move(doc2); };
 
-	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
-	if (const auto& [doc, rl] = docl.readLock(); rl) { EXPECT_TRUE(doc.value("foo", "").find("bare") == 0); }
+	//doc2 -> Must be empty since we moved it into the envelope
+	EXPECT_TRUE(doc2.empty());
+
+	// Check we have post-change value..
+	if (const auto& [doc, rl] = docl.readLock(); rl) { EXPECT_EQ(3, doc.size()); }
 }
-
 ```
 
 
