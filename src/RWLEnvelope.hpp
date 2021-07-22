@@ -88,7 +88,11 @@ namespace siddiqsoft
 
 		/// @brief Move constructor
 		/// @param src source/contained object
-		explicit RWLEnvelope(T&& src) { std::exchange(_item, src); }
+		explicit RWLEnvelope(T&& src)
+		{
+			// Delegate to the underlying item type move assignment operator
+			_item = std::move(src);
+		}
 
 
 		/// @brief Move assignment replace previous value
