@@ -86,6 +86,33 @@ namespace siddiqsoft
 		}
 
 
+		/// @brief Implement a move constructor
+		/// NOTE: The underlying mutex are *not* shared/moved!
+		/// The new object gets it own mutex whereas the source retains its mutex.
+		/// @param src The source is the other envelope of the same type
+		explicit RWLEnvelope(RWLEnvelope<T>&& src) noexcept
+		{
+			try
+			{
+				// We must execute within the lock of the source object
+				if (auto [o, wl] = src.writeLock(); wl)
+				{
+					// Move the internal data
+					_item = std::move(o);
+					// Move the counter
+					std::exchange(_rwa, src._rwa);
+					// Cannot "move" the mutex.
+					// as we're using it! Moreover, once the lock releases
+					// we can clear the calling object
+				}
+			}
+			catch (...)
+			{
+				// cannot throw
+			}
+		}
+
+
 		/// @brief Move constructor
 		/// @param src source/contained object
 		explicit RWLEnvelope(T&& src)

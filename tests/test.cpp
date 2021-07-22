@@ -209,3 +209,43 @@ TEST(tests, TwoThreadsBare)
 	EXPECT_EQ(READ_LIMIT * THREAD_COUNT, readCounter.load()) << myContainer.snapshot().dump();
 	EXPECT_EQ(WRITE_LIMIT * THREAD_COUNT, writeCounter.load()) << myContainer.snapshot().dump();
 }
+
+
+TEST(tests, MoveConstructor)
+{
+	siddiqsoft::RWLEnvelope<nlohmann::json> docl({{"foo", "bar"}, {"few", "lar"}});
+
+	// Check we have pre-change value..
+	EXPECT_EQ("bar", docl.observe<std::string>([](const auto& doc) { return doc.value("foo", ""); }));
+
+	// Modify the item
+	docl.mutate<void>([](auto& doc) { doc["foo"] = "bare"; });
+
+	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
+	EXPECT_TRUE(docl.observe<bool>([](const auto& doc) { return doc.value("foo", "").find("bare") == 0; }));
+
+	// Check to make sure that the statistics match
+	auto info = nlohmann::json(docl);
+	EXPECT_EQ(1, info.value("readWriteActions", 0));
+
+	// Now, we "move" docl --> docl2
+	siddiqsoft::RWLEnvelope<nlohmann::json> docl2(std::move(docl));
+
+	// Must be empty since we moved it into the envelope
+	EXPECT_TRUE(docl.observe<bool>([](const auto& doc) { return doc.empty(); }));
+
+	// Check we have pre-change value..
+	EXPECT_EQ("lar", docl2.observe<std::string>([](const auto& doc) { return doc.value("few", ""); }));
+
+	// Modify the item
+	docl2.mutate<void>([](auto& doc) { doc["few"] = "lare"; });
+
+	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
+	EXPECT_TRUE(docl2.observe<bool>(
+			[](const auto& doc) { return (doc.value("foo", "").find("bare") == 0) && (doc.value("few", "").find("lare") == 0); }));
+
+	// Check to make sure that the statistics match
+	auto info2 = nlohmann::json(docl2);
+	// We performed two mutates.. one from the previous object and one in the new copy
+	EXPECT_EQ(2, info2.value("readWriteActions", 0));
+}
