@@ -2,11 +2,11 @@ RWLEnvelope : A simple read-writer lock wrapper for modern C++
 -------------------------------------------
 
 [![CodeQL](https://github.com/SiddiqSoft/RWLEnvelope/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/SiddiqSoft/RWLEnvelope/actions/workflows/codeql-analysis.yml)
-[![Build Status](https://dev.azure.com/siddiqsoft/siddiqsoft/_apis/build/status/SiddiqSoft.RWLEnvelope?branchName=main)](https://dev.azure.com/siddiqsoft/siddiqsoft/_build/latest?definitionId=6&branchName=main)
+[![Build Status](https://dev.azure.com/siddiqsoft/siddiqsoft/_apis/build/status/SiddiqSoft.rwlenvelope?branchName=main)](https://dev.azure.com/siddiqsoft/siddiqsoft/_build/latest?definitionId=7&branchName=main)
 ![](https://img.shields.io/nuget/v/SiddiqSoft.RWLEnvelope)
 ![](https://img.shields.io/github/v/tag/SiddiqSoft/RWLEnvelope)
-![](https://img.shields.io/azure-devops/tests/siddiqsoft/siddiqsoft/6)
-![](https://img.shields.io/azure-devops/coverage/siddiqsoft/siddiqsoft/6)
+![](https://img.shields.io/azure-devops/tests/siddiqsoft/siddiqsoft/7)
+![](https://img.shields.io/azure-devops/coverage/siddiqsoft/siddiqsoft/7)
 
 # Objective
 - Avoid re-implementing the rw-lock; standard C++ (since C++14) has a good reader-writer lock implementation.
