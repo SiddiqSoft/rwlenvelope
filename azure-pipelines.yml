@@ -28,7 +28,7 @@ steps:
 
 - task: GitVersion@5
   inputs:
-    runtime: 'core'
+    runtime: 'full'
 
 - script: echo %Action%%BuildVersion%
   displayName: 'Set build version'
