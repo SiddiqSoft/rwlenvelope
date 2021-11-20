@@ -21,14 +21,14 @@ variables:
   
 steps:
 - task: NuGetToolInstaller@1
-  displayName: 'Use NuGet 5.10.0'
+  displayName: 'Use NuGet 6.0.0'
   inputs:
-    versionSpec: '5.10.0'
+    versionSpec: '6.0.0'
     checkLatest: true
 
 - task: GitVersion@5
   inputs:
-    runtime: 'core'
+    runtime: 'full'
     configFilePath: 'GitVersion.yml'
 
 - script: echo %Action%%BuildVersion%
