@@ -16,8 +16,8 @@
 		<projectUrl>https://github.com/SiddiqSoft/RWLEnvelope</projectUrl>
 		<requireLicenseAcceptance>true</requireLicenseAcceptance>
 		<license type="expression">BSD-3-Clause</license>
-    <icon>docs\Siddiq-Software-Avatar.png</icon>
-    <readme>docs\README.md</readme>
+		<icon>docs\Siddiq-Software-Avatar.png</icon>
+		<readme>docs\README.md</readme>
 		<releaseNotes></releaseNotes>
 		<copyright>Copyright (c) 2021 Siddiq Software LLC</copyright>
 		<!-- Dependencies -->
@@ -36,7 +36,7 @@
 		<file src="..\src\*.hpp" target="build\native\include\siddiqsoft\" />
 		<file src="Siddiq-Software-Avatar.png" target="docs\" />
 		<file src="..\README.md" target="docs\" />
-    
+
 		<!-- MSBuild .targets files -->
 		<file src="SiddiqSoft.RWLEnvelope.targets" target="build\native" />
 	</files>
