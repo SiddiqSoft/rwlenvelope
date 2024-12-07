@@ -36,16 +36,24 @@
 
 
 // We need this to pull in the thread id
+#include <cstddef>
+#include <sstream>
+#if defined(WIN32)
 #define _WIN32_WINNT 0x0A00
 #include <windows.h>
+#endif
+
+#include <format>
 
 #include <thread>
 #include "gtest/gtest.h"
 
 #include "nlohmann/json.hpp"
-#include "../src/RWLEnvelope.hpp"
+#include "../include/siddiqsoft/RWLEnvelope.hpp"
 
+#if defined(WIN32)
 #include <processthreadsapi.h>
+#endif
 
 #if !__cpp_structured_bindings
 #error "tests: Must have structured bindings C++17"
@@ -93,35 +101,47 @@ TEST(tests, TwoThreads)
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread([&]() {
-			startSignal.wait(0);
-			for (uint32_t j = 0; j < READ_LIMIT; j++)
-			{
-				myContainer.observe<void>([&](auto const& o) { readCounter++; });
-				std::this_thread::sleep_for(std::chrono::nanoseconds(rand() % READ_LIMIT));
-			}
-			readerFinished++;
-			readerFinished.notify_all();
-		}));
+		readerPool.push_back(std::jthread(
+				[&]()
+				{
+					startSignal.wait(0);
+					for (uint32_t j = 0; j < READ_LIMIT; j++)
+					{
+						myContainer.observe<void>([&](auto const& o) { readCounter++; });
+						std::this_thread::sleep_for(std::chrono::nanoseconds(rand() % READ_LIMIT));
+					}
+					readerFinished++;
+					readerFinished.notify_all();
+				}));
 	}
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread([&]() {
-			unsigned tid = GetCurrentThreadId();
-			startSignal.wait(0);
-			for (uint32_t j = 0; j < WRITE_LIMIT; j++)
-			{
-				myContainer.mutate<void>([&writeCounter, tid, j](auto& o) {
-					o["lastThreadId"] = tid;
-					o["j"]            = j;
-					o["writeCount"]   = ++writeCounter;
-				});
-				std::this_thread::sleep_for(std::chrono::nanoseconds(rand() % WRITE_LIMIT));
-			}
-			writerFinished++;
-			writerFinished.notify_all();
-		}));
+		readerPool.push_back(std::jthread(
+				[&]()
+				{
+#if defined(WIN32)
+					unsigned tid = GetCurrentThreadId();
+#else
+					std::stringstream ss {};
+					ss << std::this_thread::get_id();
+					auto tid = ss.str();
+#endif
+					startSignal.wait(0);
+					for (uint32_t j = 0; j < WRITE_LIMIT; j++)
+					{
+						myContainer.mutate<void>(
+								[&writeCounter, tid, j](auto& o)
+								{
+									o["lastThreadId"] = tid;
+									o["j"]            = j;
+									o["writeCount"]   = ++writeCounter;
+								});
+						std::this_thread::sleep_for(std::chrono::nanoseconds(rand() % WRITE_LIMIT));
+					}
+					writerFinished++;
+					writerFinished.notify_all();
+				}));
 	}
 
 	// Let's signal threads to start!
@@ -160,37 +180,47 @@ TEST(tests, TwoThreadsBare)
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread([&]() {
-			startSignal.wait(0);
-			for (uint32_t j = 0; j < READ_LIMIT; j++)
-			{
-				if (auto [o, rl] = myContainer.readLock(); rl) { readCounter++; }
+		readerPool.push_back(std::jthread(
+				[&]()
+				{
+					startSignal.wait(0);
+					for (uint32_t j = 0; j < READ_LIMIT; j++)
+					{
+						if (auto [o, rl] = myContainer.readLock(); rl) { readCounter++; }
 
-				std::this_thread::sleep_for(std::chrono::milliseconds(rand() % READ_LIMIT));
-			}
-			readerFinished++;
-			readerFinished.notify_all();
-		}));
+						std::this_thread::sleep_for(std::chrono::milliseconds(rand() % READ_LIMIT));
+					}
+					readerFinished++;
+					readerFinished.notify_all();
+				}));
 	}
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread([&]() {
-			auto tid = GetCurrentThreadId();
-			startSignal.wait(0);
-			for (uint32_t j = 0; j < WRITE_LIMIT; j++)
-			{
-				if (auto [o, rwl] = myContainer.writeLock(); rwl)
+		readerPool.push_back(std::jthread(
+				[&]()
 				{
-					o["lastThreadId"] = tid;
-					o["j"]            = j;
-					o["writeCount"]   = ++writeCounter;
-				};
-				std::this_thread::sleep_for(std::chrono::milliseconds(rand() % WRITE_LIMIT));
-			}
-			writerFinished++;
-			writerFinished.notify_all();
-		}));
+#if defined(WIN32)
+					unsigned tid = GetCurrentThreadId();
+#else
+					std::stringstream ss {};
+					ss << std::this_thread::get_id();
+					auto tid = ss.str();
+#endif
+					startSignal.wait(0);
+					for (uint32_t j = 0; j < WRITE_LIMIT; j++)
+					{
+						if (auto [o, rwl] = myContainer.writeLock(); rwl)
+						{
+							o["lastThreadId"] = tid;
+							o["j"]            = j;
+							o["writeCount"]   = ++writeCounter;
+						};
+						std::this_thread::sleep_for(std::chrono::milliseconds(rand() % WRITE_LIMIT));
+					}
+					writerFinished++;
+					writerFinished.notify_all();
+				}));
 	}
 
 	// Let's signal threads to start!
