@@ -43,6 +43,8 @@
 #include <windows.h>
 #endif
 
+#include <format>
+
 #include <thread>
 #include "gtest/gtest.h"
 
