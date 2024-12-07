@@ -36,14 +36,16 @@
 
 
 // We need this to pull in the thread id
+#if defined (WIN32)
 #define _WIN32_WINNT 0x0A00
 #include <windows.h>
+#endif
 
 #include <thread>
 #include "gtest/gtest.h"
 
 #include "nlohmann/json.hpp"
-#include "../src/RWLEnvelope.hpp"
+#include "../include/siddiqsoft/RWLEnvelope.hpp"
 
 #include <processthreadsapi.h>
 
