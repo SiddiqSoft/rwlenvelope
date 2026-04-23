@@ -42,6 +42,7 @@
 #include <functional>
 #include <shared_mutex>
 #include <tuple>
+#include <utility>
 
 #if !__has_cpp_attribute(nodiscard)
 #error "We really should have [[nodiscard]]"
@@ -99,8 +100,8 @@ namespace siddiqsoft
 				{
 					// Move the internal data
 					_item = std::move(o);
-					// Move the counter
-					std::exchange(_rwa, src._rwa);
+					// Move the counter (transfer src's value to us and zero out src)
+					_rwa = std::exchange(src._rwa, 0);
 					// Cannot "move" the mutex.
 					// as we're using it! Moreover, once the lock releases
 					// we can clear the calling object
@@ -160,8 +161,8 @@ namespace siddiqsoft
 		/// @return Returns (forwards) the return from the callback
 		template <typename R = void> R mutate(std::function<R(T&)> callback)
 		{
-			rone   d(_rwa); // we increment the housekeeping counter on each callback
 			RWLock myWriterLock(_sMutex);
+			rone   d(_rwa); // we increment the housekeeping counter on each callback
 			return callback(_item);
 		}
 
