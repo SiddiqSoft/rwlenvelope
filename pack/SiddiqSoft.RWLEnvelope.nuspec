@@ -15,7 +15,6 @@
 		<summary>Thread-safe reader-writer lock envelope for C++17+</summary>
 		<tags>reader-writer-lock shared-lock unique-lock thread-safe concurrency synchronization mutex native cpp17 header-only</tags>
 		<projectUrl>https://github.com/SiddiqSoft/RWLEnvelope</projectUrl>
-		<repositoryUrl>https://github.com/SiddiqSoft/RWLEnvelope</repositoryUrl>
 		<repositoryType>git</repositoryType>
 		<requireLicenseAcceptance>true</requireLicenseAcceptance>
 		<license type="expression">BSD-3-Clause</license>
