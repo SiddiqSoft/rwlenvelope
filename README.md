@@ -8,15 +8,27 @@ RWLEnvelope : A simple read-writer lock envelope
 ![](https://img.shields.io/azure-devops/tests/siddiqsoft/siddiqsoft/7)
 ![](https://img.shields.io/azure-devops/coverage/siddiqsoft/siddiqsoft/7)
 
-# Objective
-- Avoid re-implementing the rw-lock; standard C++ (since C++14) has a good reader-writer lock implementation.
-- Provide a simple, convenience layer atop the underlying [`std::unique_lock`](https://en.cppreference.com/w/cpp/thread/unique_lock) and [`std::shared_lock`](https://en.cppreference.com/w/cpp/thread/shared_lock) access to some type.
+## Objective
+
+**RWLEnvelope** is a header-only C++ template library that provides a simple, convenient envelope-access model for thread-safe access to objects using reader-writer locks. Our goal is to:
+
+- **Avoid re-implementing the rw-lock**: The standard C++ library (since C++14) provides excellent reader-writer lock implementations via [`std::shared_mutex`](https://en.cppreference.com/w/cpp/thread/shared_mutex), [`std::unique_lock`](https://en.cppreference.com/w/cpp/thread/unique_lock), and [`std::shared_lock`](https://en.cppreference.com/w/cpp/thread/shared_lock).
+
+- **Simplify thread-safe access patterns**: We provide a convenient layer that makes it easy to work with shared data in multi-threaded applications without exposing the complexity of manual lock management.
+
+- **Enable safe concurrent access**: Support multiple concurrent readers while ensuring exclusive access for writers, with automatic lock management and RAII semantics.
+
+- **Minimize boilerplate code**: Reduce the amount of locking code needed to safely access shared objects through intuitive APIs.
 
 <p align="right" width="50%">
 <b>WE DO NOT IMPLEMENT</b> a read-writer lock; the standard C++ library has one.<br/>We provide a header-only package simplifying the locking code around thread-safe access to your underlying type.
 <br/>
 <i>NOT a wrapper; an envelope.</i>
 </p>
+
+# API Documentation
+
+For comprehensive API documentation, including detailed descriptions of all methods, usage patterns, and examples, see [**API.md**](API.md).
 
 # Requirements
 - You must be able to use [`<shared_mutex>`](https://en.cppreference.com/w/cpp/thread/shared_mutex) and [`<mutex>`](https://en.cppreference.com/w/cpp/thread/mutex).
@@ -82,6 +94,75 @@ TEST(examples, AssignWithDirectLocks)
 
 Additional [examples](tests/examples.cpp).
 
+# Test Coverage
+
+The library includes comprehensive test coverage across multiple categories:
+
+## Basic Functionality Tests
+
+- **Simple Operations**: Basic envelope creation and mutation
+- **Callback-Based Access**: Testing `observe()` and `mutate()` methods with various return types
+- **Direct Lock Access**: Testing `readLock()` and `writeLock()` with structured bindings
+- **Reassignment**: Testing `reassign()` method for replacing envelope contents
+- **Snapshot Operations**: Testing `snapshot()` for independent copies
+- **Move Semantics**: Testing move constructors and move assignment
+
+## Edge Case Tests
+
+- **Default Construction**: Envelopes with default-constructed objects
+- **Return Value Forwarding**: Callbacks returning various types (void, int, string, bool, size_t)
+- **Non-JSON Types**: Testing with `std::vector<int>`, `std::string`, and other types
+- **Move Constructor Behavior**: Verifying source envelope state after move operations
+- **RWA Counter Tracking**: Validating the read-write-action counter accuracy
+- **Exception Safety**: Testing behavior when callbacks throw exceptions
+- **Independent Snapshots**: Verifying snapshots are truly independent copies
+- **Multiple Reassignments**: Testing repeated reassignment operations
+
+## Concurrency & Stress Tests
+
+### Reader-Writer Contention
+- **Two-Thread Tests**: Concurrent readers and writers with callbacks and direct locks
+- **Monotonic Counter Integrity**: Verifying counter never goes backwards under concurrent access
+- **Snapshot Consistency**: Ensuring snapshots return internally consistent state
+- **Concurrent Reassign**: Testing reassign racing with observe and snapshot operations
+
+### High-Contention Scenarios
+- **Zero-Sleep Maximum Contention**: All threads hammer the lock without delays
+- **Mixed API Concurrency**: All 5 API methods used concurrently on the same envelope
+- **Shared Read Lock Concurrency**: Multiple readers accessing simultaneously without blocking
+- **Concurrent Observe with Return**: Readers returning values under write contention
+
+### Data Integrity Verification
+- **RWA Counter Accuracy**: Verifying mutation counter matches exact mutate() count
+- **Paired Field Consistency**: Ensuring related fields remain synchronized
+- **Version-Data Pairing**: Validating version and data fields stay in sync during reassignment
+
+## Test Statistics
+
+- **Total Test Cases**: 20+ comprehensive test cases
+- **Concurrency Levels**: Tests with up to 16 concurrent reader threads and 8 writer threads
+- **Iteration Counts**: Stress tests with 5,000-10,000 iterations per thread
+- **Coverage Areas**:
+  - ✅ All public API methods
+  - ✅ Thread safety guarantees
+  - ✅ Lock semantics (shared vs. exclusive)
+  - ✅ Exception safety
+  - ✅ Move semantics
+  - ✅ Data consistency under contention
+  - ✅ Return value forwarding
+  - ✅ JSON serialization (when available)
+
+## Running Tests
+
+Tests are built using Google Test (gtest) and can be run via the CMake build system:
+
+```bash
+cmake --preset default
+cmake --build --preset default
+ctest --preset default
+```
+
+Coverage reports are generated and tracked via Azure Pipelines CI/CD.
 
 <small align="right">
 
