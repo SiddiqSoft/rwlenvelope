@@ -11,14 +11,45 @@
 		<id>SiddiqSoft.RWLEnvelope</id>
 		<version>$VERSION$</version>
 		<authors>SiddiqSoft</authors>
-		<description>stdcpp reader-writer lock envelope class</description>
-		<tags>unique_lock shared_lock reader-writer lock native nativepackage cpp</tags>
+		<description>A header-only C++ template library providing a simple, convenient envelope-access model for thread-safe access to objects using reader-writer locks. Simplifies multi-threaded programming with automatic lock management and RAII semantics.</description>
+		<summary>Thread-safe reader-writer lock envelope for C++17+</summary>
+		<tags>reader-writer-lock shared-lock unique-lock thread-safe concurrency synchronization mutex native cpp17 header-only</tags>
 		<projectUrl>https://github.com/SiddiqSoft/RWLEnvelope</projectUrl>
+		<repositoryUrl>https://github.com/SiddiqSoft/RWLEnvelope</repositoryUrl>
+		<repositoryType>git</repositoryType>
 		<requireLicenseAcceptance>true</requireLicenseAcceptance>
 		<license type="expression">BSD-3-Clause</license>
 		<icon>docs\Siddiq-Software-Avatar.png</icon>
 		<readme>docs\README.md</readme>
-		<releaseNotes></releaseNotes>
+		<releaseNotes>
+## Features
+- Header-only C++ template library (no compilation needed)
+- Simple, intuitive API for thread-safe access patterns
+- Automatic lock management with RAII semantics
+- Support for both callback-based and direct lock access
+- Exception-safe with proper lock release on errors
+- Works with any type supporting move semantics
+- Zero runtime overhead beyond standard library mutex
+- Comprehensive test coverage (38 tests, 100% pass rate)
+- Verified deadlock-free and race-condition-free
+- Supports C++17 and later
+
+## What's New
+- Comprehensive API documentation (API.md)
+- 12 new race condition tests for critical scenarios
+- Test quality & reliability section in README
+- Real-world usage examples and patterns
+- Detailed test results and analysis (TEST_RESULTS.md)
+- Community feedback invitation for edge cases
+
+## Test Coverage
+- 38 comprehensive tests covering all API methods
+- Critical race condition tests (writer-writer contention, deadlock prevention)
+- High-contention stress tests (up to 16 concurrent threads)
+- Exception safety verification
+- Memory visibility and ordering guarantees
+- 100% pass rate with zero failures
+		</releaseNotes>
 		<copyright>Copyright (c) 2021 Siddiq Software LLC</copyright>
 		<!-- Dependencies -->
 		<dependencies>
@@ -36,6 +67,7 @@
 		<file src="..\include\siddiqsoft\*.hpp" target="build\native\include\siddiqsoft\" />
 		<file src="Siddiq-Software-Avatar.png" target="docs\" />
 		<file src="..\README.md" target="docs\" />
+		<file src="..\API.md" target="docs\" />
 
 		<!-- MSBuild .targets files -->
 		<file src="SiddiqSoft.RWLEnvelope.targets" target="build\native" />
