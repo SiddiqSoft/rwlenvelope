@@ -37,18 +37,9 @@
 ## What's New
 - Comprehensive API documentation (API.md)
 - 12 new race condition tests for critical scenarios
-- Test quality & reliability section in README
+- Test quality and reliability section in README
 - Real-world usage examples and patterns
-- Detailed test results and analysis (TEST_RESULTS.md)
 - Community feedback invitation for edge cases
-
-## Test Coverage
-- 38 comprehensive tests covering all API methods
-- Critical race condition tests (writer-writer contention, deadlock prevention)
-- High-contention stress tests (up to 16 concurrent threads)
-- Exception safety verification
-- Memory visibility and ordering guarantees
-- 100% pass rate with zero failures
 		</releaseNotes>
 		<copyright>Copyright (c) 2021 Siddiq Software LLC</copyright>
 		<!-- Dependencies -->
