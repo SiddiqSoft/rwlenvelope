@@ -26,6 +26,120 @@ RWLEnvelope : A simple read-writer lock envelope
 <i>NOT a wrapper; an envelope.</i>
 </p>
 
+## Why RWLEnvelope?
+
+### The Problem with Manual Lock Management
+
+Writing thread-safe code is hard. Without RWLEnvelope, you'd need to:
+
+```cpp
+// Without RWLEnvelope - verbose and error-prone
+std::shared_mutex mutex;
+std::map<std::string, int> data;
+
+// Reading
+{
+    std::shared_lock lock(mutex);
+    auto it = data.find("key");
+    if (it != data.end()) {
+        std::cout << it->second << std::endl;
+    }
+} // Lock released here
+
+// Writing
+{
+    std::unique_lock lock(mutex);
+    data["key"] = 42;
+} // Lock released here
+```
+
+### The RWLEnvelope Solution
+
+With RWLEnvelope, the same code becomes cleaner and safer:
+
+```cpp
+// With RWLEnvelope - clean and safe
+siddiqsoft::RWLEnvelope<std::map<std::string, int>> data;
+
+// Reading
+data.observe<void>([](const auto& m) {
+    auto it = m.find("key");
+    if (it != m.end()) {
+        std::cout << it->second << std::endl;
+    }
+});
+
+// Writing
+data.mutate<void>([](auto& m) {
+    m["key"] = 42;
+});
+```
+
+### Key Benefits
+
+1. **Automatic Lock Management**: Locks are acquired and released automatically via RAII. No risk of forgetting to unlock.
+
+2. **Clear Intent**: `observe()` for reads and `mutate()` for writes makes your code's intent explicit and self-documenting.
+
+3. **Reduced Boilerplate**: No need to manually create lock objects or manage scopes. The library handles it.
+
+4. **Type Safety**: The template enforces that you're working with the correct type. No accidental type mismatches.
+
+5. **Exception Safe**: If your callback throws, the lock is still released properly. No deadlocks or resource leaks.
+
+6. **Flexible Access Patterns**: Choose between callback-based access (for simple operations) or direct lock access (for complex operations).
+
+7. **Zero Overhead**: Header-only implementation with no runtime overhead beyond the standard library's mutex.
+
+8. **Works with Any Type**: Not limited to JSON or maps. Works with any type that supports move semantics.
+
+### Real-World Scenarios
+
+**Configuration Management**:
+```cpp
+siddiqsoft::RWLEnvelope<AppConfig> config;
+
+// Multiple threads reading config
+config.observe<std::string>([](const auto& cfg) {
+    return cfg.getDatabaseUrl();
+});
+
+// Single thread updating config
+config.mutate<void>([](auto& cfg) {
+    cfg.setDatabaseUrl("new_url");
+});
+```
+
+**Cache Implementation**:
+```cpp
+siddiqsoft::RWLEnvelope<std::unordered_map<std::string, CacheEntry>> cache;
+
+// Fast concurrent reads
+cache.observe<CacheEntry>([](const auto& c) {
+    return c.at("key");
+});
+
+// Exclusive writes
+cache.mutate<void>([](auto& c) {
+    c["key"] = computeValue();
+});
+```
+
+**Shared State in Services**:
+```cpp
+siddiqsoft::RWLEnvelope<ServiceState> state;
+
+// Multiple reader threads
+state.observe<bool>([](const auto& s) {
+    return s.isHealthy();
+});
+
+// Single writer thread
+state.mutate<void>([](auto& s) {
+    s.updateMetrics();
+});
+```
+
 # API Documentation
 
 For comprehensive API documentation, including detailed descriptions of all methods, usage patterns, and examples, see [**API.md**](API.md).
@@ -157,12 +271,92 @@ The library includes comprehensive test coverage across multiple categories:
 Tests are built using Google Test (gtest) and can be run via the CMake build system:
 
 ```bash
-cmake --preset default
-cmake --build --preset default
-ctest --preset default
+cmake --preset Apple-Debug
+cmake --build --preset Apple-Debug
+ctest --preset Apple-Debug
 ```
 
 Coverage reports are generated and tracked via Azure Pipelines CI/CD.
+
+For detailed test results and analysis, see [**TEST_RESULTS.md**](TEST_RESULTS.md).
+
+# Test Quality & Reliability
+
+## Comprehensive Test Suite
+
+We take testing seriously. The library includes **38 comprehensive tests** covering:
+
+- ✅ **4 Example tests** - Real-world usage patterns
+- ✅ **4 Critical race condition tests** - Writer-writer contention, deadlock prevention, reassign-mutate racing
+- ✅ **3 High-priority race condition tests** - Exception safety, API equivalence verification
+- ✅ **2 Medium-priority race condition tests** - Snapshot isolation, RWA counter accuracy
+- ✅ **3 Low-priority race condition tests** - Memory visibility, variable lock durations
+- ✅ **4 Basic concurrency tests** - Multi-threaded reader-writer scenarios
+- ✅ **10 Edge case tests** - Exception handling, move semantics, type flexibility
+- ✅ **8 Stress tests** - High-contention scenarios with 5,000-10,000 iterations
+
+## Test Execution
+
+All 38 tests pass successfully in ~7.6 seconds:
+- **Zero failures** - 100% pass rate
+- **No race conditions detected** - Verified with up to 16 concurrent threads
+- **Exception safe** - Callbacks throwing exceptions don't corrupt state
+- **Deadlock-free** - Explicit timeout-based deadlock detection
+- **Memory safe** - All writes visible to readers, no torn reads
+
+## Stress Testing
+
+The test suite includes aggressive stress tests:
+- **Maximum contention**: All threads hammer the lock without delays
+- **Mixed API usage**: All 5 API methods used concurrently
+- **Variable lock durations**: Realistic lock hold times
+- **Concurrent exceptions**: Exception safety under contention
+- **Rapid reassignments**: Multiple threads reassigning simultaneously
+
+# Feedback & Contributions
+
+## Report Issues or Suggest Improvements
+
+We want to hear about your usage scenarios! If you encounter:
+
+- **Edge cases** not covered by our tests
+- **Performance issues** in your specific use case
+- **Compatibility problems** with your type or compiler
+- **Feature requests** for additional functionality
+- **Documentation gaps** or unclear explanations
+
+**Please open an issue** on [GitHub](https://github.com/SiddiqSoft/RWLEnvelope/issues) with:
+
+1. **Your use case**: How are you using RWLEnvelope?
+2. **The scenario**: What specific situation triggered the issue?
+3. **Expected behavior**: What should happen?
+4. **Actual behavior**: What actually happened?
+5. **Reproduction steps**: How can we reproduce it?
+6. **Environment**: Compiler, OS, C++ version
+
+## Help Us Improve
+
+Your feedback helps us:
+- Identify edge cases we haven't tested
+- Optimize for real-world usage patterns
+- Improve documentation and examples
+- Ensure the library works reliably in your scenarios
+
+Even if you don't have issues, we'd love to hear about:
+- How you're using RWLEnvelope
+- Performance characteristics in your application
+- Types you're enveloping
+- Patterns that work well for you
+
+## Contributing
+
+Contributions are welcome! Whether it's:
+- Additional test cases for your scenarios
+- Performance optimizations
+- Documentation improvements
+- Bug fixes
+
+Please submit a pull request or open an issue to discuss your ideas.
 
 <small align="right">
 

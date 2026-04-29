@@ -13,6 +13,7 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
     target_sources( ${TESTPROJ}
                     PRIVATE
                     ${PROJECT_SOURCE_DIR}/tests/examples.cpp
+                    ${PROJECT_SOURCE_DIR}/tests/race_conditions.cpp
                     ${PROJECT_SOURCE_DIR}/tests/test.cpp)
 
     # Dependencies
