@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <!--
+    Natvis file for RWLEnvelope
+    Provides enhanced debugging visualization for the RWLEnvelope template class
+    in Visual Studio debugger.
+    
+    Documentation: https://docs.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects
+  -->
+
+  <!-- RWLEnvelope visualization - Generic template fallback -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;*&gt;">
+    <DisplayString>RWLEnvelope [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Item]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+      <Item Name="[Mutex]">_sMutex</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for int -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;int&gt;">
+    <DisplayString>RWLEnvelope&lt;int&gt; = {_item} [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Value]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for unsigned int -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;unsigned int&gt;">
+    <DisplayString>RWLEnvelope&lt;unsigned int&gt; = {_item} [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Value]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for long -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;long&gt;">
+    <DisplayString>RWLEnvelope&lt;long&gt; = {_item} [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Value]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for unsigned long -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;unsigned long&gt;">
+    <DisplayString>RWLEnvelope&lt;unsigned long&gt; = {_item} [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Value]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for long long -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;long long&gt;">
+    <DisplayString>RWLEnvelope&lt;long long&gt; = {_item} [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Value]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for unsigned long long -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;unsigned long long&gt;">
+    <DisplayString>RWLEnvelope&lt;unsigned long long&gt; = {_item} [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Value]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for float -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;float&gt;">
+    <DisplayString>RWLEnvelope&lt;float&gt; = {_item} [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Value]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for double -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;double&gt;">
+    <DisplayString>RWLEnvelope&lt;double&gt; = {_item} [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Value]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for bool -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;bool&gt;">
+    <DisplayString>RWLEnvelope&lt;bool&gt; = {_item} [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Value]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for std::string -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;std::basic_string&lt;*&gt;&gt;">
+    <DisplayString>RWLEnvelope&lt;string&gt; = "{_item}" [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Value]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for pointers - must come after generic fallback -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;*,*&gt;">
+    <DisplayString>RWLEnvelope&lt;pointer&gt; = {_item} [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Pointer]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+  <!-- Specialization for std::vector - uses generic natvis for vector display -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;std::vector&lt;*&gt;&gt;">
+    <DisplayString>RWLEnvelope&lt;vector&gt; [Actions: {_rwa}]</DisplayString>
+    <Expand>
+      <Item Name="[Vector]">_item</Item>
+      <Item Name="[Read-Write Actions]">_rwa</Item>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>

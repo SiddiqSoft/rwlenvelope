@@ -341,7 +341,7 @@ if (auto const& [vec, lock] = data.readLock(); lock) {
 
 // Write with direct access
 if (auto [vec, lock] = data.writeLock(); lock) {
-    vec.push_back(42);
+    vec.emplace_back(42);
     vec.erase(vec.begin());
 }
 ```
