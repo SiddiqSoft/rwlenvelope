@@ -31,6 +31,7 @@
 - Comprehensive test coverage (38 tests, 100% pass rate)
 - Verified deadlock-free and race-condition-free
 - Supports C++17 and later
+- Enhanced Visual Studio debugging with natvis visualizers
 
 ## What's New
 - Comprehensive API documentation (API.md)
@@ -38,6 +39,7 @@
 - Test quality and reliability section in README
 - Real-world usage examples and patterns
 - Community feedback invitation for edge cases
+- Visual Studio debugger natvis file for enhanced debugging experience
 		</releaseNotes>
 		<copyright>Copyright (c) 2021 Siddiq Software LLC</copyright>
 		<!-- Dependencies -->
@@ -58,7 +60,8 @@
 		<file src="..\README.md" target="docs\" />
 		<file src="..\API.md" target="docs\" />
 
-		<!-- MSBuild .targets files -->
+		<!-- MSBuild .targets files and debugger visualizers -->
 		<file src="SiddiqSoft.RWLEnvelope.targets" target="build\native" />
+		<file src="SiddiqSoft.RWLEnvelope.natvis" target="build\native" />
 	</files>
 </package>

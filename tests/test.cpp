@@ -102,7 +102,7 @@ TEST(tests, TwoThreads)
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread(
+		readerPool.emplace_back(
 				[&]()
 				{
 					thread_local std::mt19937               rng {std::random_device {}()};
@@ -115,12 +115,12 @@ TEST(tests, TwoThreads)
 					}
 					readerFinished++;
 					readerFinished.notify_all();
-				}));
+				});
 	}
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread(
+		readerPool.emplace_back(
 				[&]()
 				{
 					thread_local std::mt19937               rng {std::random_device {}()};
@@ -146,7 +146,7 @@ TEST(tests, TwoThreads)
 					}
 					writerFinished++;
 					writerFinished.notify_all();
-				}));
+				});
 	}
 
 	// Let's signal threads to start!
@@ -185,7 +185,7 @@ TEST(tests, TwoThreadsBare)
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread(
+		readerPool.emplace_back(
 				[&]()
 				{
 					thread_local std::mt19937               rng {std::random_device {}()};
@@ -199,12 +199,12 @@ TEST(tests, TwoThreadsBare)
 					}
 					readerFinished++;
 					readerFinished.notify_all();
-				}));
+				});
 	}
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread(
+		readerPool.emplace_back(
 				[&]()
 				{
 					thread_local std::mt19937               rng {std::random_device {}()};
@@ -229,7 +229,7 @@ TEST(tests, TwoThreadsBare)
 					}
 					writerFinished++;
 					writerFinished.notify_all();
-				}));
+				});
 	}
 
 	// Let's signal threads to start!
@@ -278,11 +278,13 @@ TEST(edge, MutateWithReturnValue)
 {
 	siddiqsoft::RWLEnvelope<nlohmann::json> envelope(nlohmann::json({{"counter", 10}}));
 
-	int oldValue = envelope.mutate<int>([](auto& doc) {
-		int prev         = doc.value("counter", 0);
-		doc["counter"]   = prev + 5;
-		return prev;
-	});
+	int oldValue = envelope.mutate<int>(
+			[](auto& doc)
+			{
+				int prev       = doc.value("counter", 0);
+				doc["counter"] = prev + 5;
+				return prev;
+			});
 
 	EXPECT_EQ(10, oldValue);
 	EXPECT_EQ(15, envelope.observe<int>([](const auto& doc) { return doc.value("counter", 0); }));
@@ -318,7 +320,12 @@ TEST(edge, NonJsonType)
 	EXPECT_EQ(3, envelope.observe<size_t>([](const auto& v) { return v.size(); }));
 	EXPECT_EQ(2, envelope.observe<int>([](const auto& v) { return v[1]; }));
 
-	envelope.mutate<void>([](auto& v) { v.push_back(4); v.push_back(5); });
+	envelope.mutate<void>(
+			[](auto& v)
+			{
+				v.emplace_back(4);
+				v.emplace_back(5);
+			});
 	EXPECT_EQ(5, envelope.observe<size_t>([](const auto& v) { return v.size(); }));
 
 	auto snap = envelope.snapshot();
@@ -388,10 +395,12 @@ TEST(edge, ThrowingMutateCallback)
 	// This mutate throws after partial modification
 	try
 	{
-		envelope.mutate<void>([](auto& doc) {
-			doc["value"] = 999;
-			throw std::runtime_error("intentional");
-		});
+		envelope.mutate<void>(
+				[](auto& doc)
+				{
+					doc["value"] = 999;
+					throw std::runtime_error("intentional");
+				});
 	}
 	catch (const std::runtime_error&)
 	{
@@ -480,23 +489,25 @@ TEST(stress, MonotonicCounterIntegrity)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([](auto& doc) {
-							auto cur       = doc.value("counter", 0);
-							doc["counter"] = cur + 1;
-						});
+						envelope.mutate<void>(
+								[](auto& doc)
+								{
+									auto cur       = doc.value("counter", 0);
+									doc["counter"] = cur + 1;
+								});
 					}
-				}));
+				});
 	}
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -507,7 +518,7 @@ TEST(stress, MonotonicCounterIntegrity)
 						if (current < lastSeen) { integrityViolation.store(true); }
 						lastSeen = current;
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -534,24 +545,26 @@ TEST(stress, SnapshotConsistency)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([](auto& doc) {
-							auto next = doc.value("a", 0) + 1;
-							doc["a"]  = next;
-							doc["b"]  = next;
-						});
+						envelope.mutate<void>(
+								[](auto& doc)
+								{
+									auto next = doc.value("a", 0) + 1;
+									doc["a"]  = next;
+									doc["b"]  = next;
+								});
 					}
-				}));
+				});
 	}
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -560,7 +573,7 @@ TEST(stress, SnapshotConsistency)
 						auto snap = envelope.snapshot();
 						if (snap.value("a", -1) != snap.value("b", -2)) { inconsistencyFound.store(true); }
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -582,21 +595,21 @@ TEST(stress, ConcurrentReassignVsObserve)
 	std::atomic_bool          corruptionFound {false};
 	std::vector<std::jthread> threads;
 
-	threads.push_back(std::jthread(
+	threads.emplace_back(
 			[&]()
 			{
 				startSignal.wait(0);
 				for (uint32_t j = 0; j < ITERATIONS; j++)
 				{
 					nlohmann::json newDoc {{"version", static_cast<int>(j + 1)},
-					                       {"data", std::string("v") + std::to_string(j + 1)}};
+			                               {"data", std::string("v") + std::to_string(j + 1)}};
 					envelope.reassign(std::move(newDoc));
 				}
-			}));
+			});
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -618,7 +631,7 @@ TEST(stress, ConcurrentReassignVsObserve)
 							corruptionFound.store(true);
 						}
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -645,7 +658,7 @@ TEST(stress, HighContentionZeroSleep)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -653,12 +666,12 @@ TEST(stress, HighContentionZeroSleep)
 					{
 						envelope.mutate<void>([](auto& doc) { doc["sum"] = doc.value("sum", 0) + 1; });
 					}
-				}));
+				});
 	}
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -668,7 +681,7 @@ TEST(stress, HighContentionZeroSleep)
 						EXPECT_GE(val, 0);
 						totalReads.fetch_add(1, std::memory_order_relaxed);
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -696,24 +709,26 @@ TEST(stress, MixedApiConcurrency)
 	// mutate() writers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([&](auto& doc) {
-							doc["counter"] = doc.value("counter", 0) + 1;
-							mutateCount.fetch_add(1, std::memory_order_relaxed);
-						});
+						envelope.mutate<void>(
+								[&](auto& doc)
+								{
+									doc["counter"] = doc.value("counter", 0) + 1;
+									mutateCount.fetch_add(1, std::memory_order_relaxed);
+								});
 					}
-				}));
+				});
 	}
 
 	// writeLock() writers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -725,13 +740,13 @@ TEST(stress, MixedApiConcurrency)
 							writeLockCount.fetch_add(1, std::memory_order_relaxed);
 						}
 					}
-				}));
+				});
 	}
 
 	// observe() readers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -740,13 +755,13 @@ TEST(stress, MixedApiConcurrency)
 						int val = envelope.observe<int>([](const auto& doc) { return doc.value("counter", -1); });
 						if (val < 0) failure.store(true);
 					}
-				}));
+				});
 	}
 
 	// readLock() readers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -757,13 +772,13 @@ TEST(stress, MixedApiConcurrency)
 							if (doc.value("counter", -1) < 0) failure.store(true);
 						}
 					}
-				}));
+				});
 	}
 
 	// snapshot() readers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -772,7 +787,7 @@ TEST(stress, MixedApiConcurrency)
 						auto snap = envelope.snapshot();
 						if (snap.value("counter", -1) < 0) failure.store(true);
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -800,7 +815,7 @@ TEST(stress, RwaCounterAccuracy)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -808,12 +823,12 @@ TEST(stress, RwaCounterAccuracy)
 					{
 						envelope.mutate<void>([](auto& doc) { doc["x"] = doc.value("x", 0) + 1; });
 					}
-				}));
+				});
 	}
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -821,7 +836,7 @@ TEST(stress, RwaCounterAccuracy)
 					{
 						envelope.observe<int>([](const auto& doc) { return doc.value("x", 0); });
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -852,7 +867,7 @@ TEST(stress, ConcurrentObserveWithReturn)
 	// Writers
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -860,13 +875,13 @@ TEST(stress, ConcurrentObserveWithReturn)
 					{
 						envelope.mutate<void>([](auto& doc) { doc["value"] = doc.value("value", 0) + 1; });
 					}
-				}));
+				});
 	}
 
 	// Readers that return values — verify return is always non-negative
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -881,7 +896,7 @@ TEST(stress, ConcurrentObserveWithReturn)
 						bool has = envelope.observe<bool>([](const auto& doc) { return doc.contains("value"); });
 						if (!has) failure.store(true);
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -906,7 +921,7 @@ TEST(stress, SharedReadLockConcurrency)
 	// All readers — no writers. All should run concurrently without blocking.
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -918,7 +933,7 @@ TEST(stress, SharedReadLockConcurrency)
 							totalReads.fetch_add(1, std::memory_order_relaxed);
 						}
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;

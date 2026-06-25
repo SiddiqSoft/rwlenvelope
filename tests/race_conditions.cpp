@@ -35,6 +35,7 @@
  */
 
 #include <chrono>
+#include <cstdint>
 #include <format>
 #include <thread>
 #include "gtest/gtest.h"
@@ -59,18 +60,20 @@ TEST(race_critical, WriterWriterRaceCondition)
 	// Multiple writers all incrementing the same counter
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([](auto& doc) {
-							auto cur       = doc.value("counter", 0);
-							doc["counter"] = cur + 1;
-						});
+						envelope.mutate<void>(
+								[](auto& doc)
+								{
+									auto cur       = doc.value("counter", 0);
+									doc["counter"] = cur + 1;
+								});
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -96,7 +99,7 @@ TEST(race_critical, ReassignMutateRace)
 	std::vector<std::jthread> threads;
 
 	// One thread rapidly reassigning
-	threads.push_back(std::jthread(
+	threads.emplace_back(
 			[&]()
 			{
 				startSignal.wait(0);
@@ -105,28 +108,30 @@ TEST(race_critical, ReassignMutateRace)
 					nlohmann::json newDoc {{"version", static_cast<int>(j + 1)}, {"data", "reassigned"}};
 					envelope.reassign(std::move(newDoc));
 				}
-			}));
+			});
 
 	// Multiple threads mutating
 	for (uint32_t i = 0; i < MUTATE_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([](auto& doc) {
-							// Just verify we can access and modify
-							if (!doc.contains("version") || !doc.contains("data"))
-							{
-								// This would indicate corruption
-								// But we can't set failure here as we're in a lock
-							}
-							doc["mutated"] = true;
-						});
+						envelope.mutate<void>(
+								[](auto& doc)
+								{
+									// Just verify we can access and modify
+									if (!doc.contains("version") || !doc.contains("data"))
+									{
+										// This would indicate corruption
+										// But we can't set failure here as we're in a lock
+									}
+									doc["mutated"] = true;
+								});
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -155,7 +160,7 @@ TEST(race_critical, ConcurrentReassigns)
 	// Multiple threads all reassigning
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&, threadId = i]()
 				{
 					startSignal.wait(0);
@@ -164,7 +169,7 @@ TEST(race_critical, ConcurrentReassigns)
 						nlohmann::json newDoc {{"id", static_cast<int>(threadId)}, {"iteration", static_cast<int>(j)}};
 						envelope.reassign(std::move(newDoc));
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -200,33 +205,35 @@ TEST(race_critical, NoDeadlockUnderStress)
 	// Mix of all operations
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
-				[&, threadId = i]()
-				{
-					startSignal.wait(0);
-					for (uint32_t j = 0; j < ITERATIONS; j++)
-					{
-						switch (threadId % 5)
-						{
-							case 0: // mutate
-								envelope.mutate<void>([](auto& doc) { doc["x"] = doc.value("x", 0) + 1; });
-								break;
-							case 1: // observe
-								envelope.observe<int>([](const auto& doc) { return doc.value("x", 0); });
-								break;
-							case 2: // readLock
-								if (auto [doc, rl] = envelope.readLock(); rl) { (void)doc.value("x", 0); }
-								break;
-							case 3: // writeLock
-								if (auto [doc, wl] = envelope.writeLock(); wl) { doc["x"] = doc.value("x", 0) + 1; }
-								break;
-							case 4: // snapshot
-								(void)envelope.snapshot();
-								break;
-						}
-					}
-					completedThreads.fetch_add(1, std::memory_order_relaxed);
-				}));
+		threads.emplace_back([&, threadId = i]()
+		                                   {
+											   startSignal.wait(0);
+											   for (uint32_t j = 0; j < ITERATIONS; j++)
+											   {
+												   switch (threadId % 5)
+												   {
+												   case 0: // mutate
+													   envelope.mutate<void>([](auto& doc) { doc["x"] = doc.value("x", 0) + 1; });
+													   break;
+												   case 1: // observe
+													   envelope.observe<int>([](const auto& doc) { return doc.value("x", 0); });
+													   break;
+												   case 2: // readLock
+													   if (auto [doc, rl] = envelope.readLock(); rl) { (void)doc.value("x", 0); }
+													   break;
+												   case 3: // writeLock
+													   if (auto [doc, wl] = envelope.writeLock(); wl)
+													   {
+														   doc["x"] = doc.value("x", 0) + 1;
+													   }
+													   break;
+												   case 4: // snapshot
+													   (void)envelope.snapshot();
+													   break;
+												   }
+											   }
+											   completedThreads.fetch_add(1, std::memory_order_relaxed);
+										   });
 	}
 
 	startSignal = 1;
@@ -264,34 +271,32 @@ TEST(race_high, ExceptionSafetyUnderContention)
 	// Threads that throw exceptions
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
-				[&]()
-				{
-					startSignal.wait(0);
-					for (uint32_t j = 0; j < ITERATIONS; j++)
-					{
-						try
-						{
-							envelope.mutate<void>([j](auto& doc) {
-								if (j % 10 == 0)
-								{
-									throw std::runtime_error("intentional");
-								}
-								doc["value"] = doc.value("value", 0) + 1;
-							});
-						}
-						catch (const std::runtime_error&)
-						{
-							exceptionCount.fetch_add(1, std::memory_order_relaxed);
-						}
-					}
-				}));
+		threads.emplace_back([&]()
+		                                   {
+											   startSignal.wait(0);
+											   for (uint32_t j = 0; j < ITERATIONS; j++)
+											   {
+												   try
+												   {
+													   envelope.mutate<void>(
+															   [j](auto& doc)
+															   {
+																   if (j % 10 == 0) { throw std::runtime_error("intentional"); }
+																   doc["value"] = doc.value("value", 0) + 1;
+															   });
+												   }
+												   catch (const std::runtime_error&)
+												   {
+													   exceptionCount.fetch_add(1, std::memory_order_relaxed);
+												   }
+											   }
+										   });
 	}
 
 	// Threads that don't throw
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -306,7 +311,7 @@ TEST(race_high, ExceptionSafetyUnderContention)
 							deadlockDetected.store(true);
 						}
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -338,25 +343,27 @@ TEST(race_high, WriteLockMutateEquivalence)
 	// Half use mutate()
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([&](auto& doc) {
-							auto cur       = doc.value("counter", 0);
-							doc["counter"] = cur + 1;
-							mutateWrites.fetch_add(1, std::memory_order_relaxed);
-						});
+						envelope.mutate<void>(
+								[&](auto& doc)
+								{
+									auto cur       = doc.value("counter", 0);
+									doc["counter"] = cur + 1;
+									mutateWrites.fetch_add(1, std::memory_order_relaxed);
+								});
 					}
-				}));
+				});
 	}
 
 	// Half use writeLock()
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -369,7 +376,7 @@ TEST(race_high, WriteLockMutateEquivalence)
 							writeLockWrites.fetch_add(1, std::memory_order_relaxed);
 						}
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -398,7 +405,7 @@ TEST(race_high, ReadLockObserveEquivalence)
 	std::vector<std::jthread> threads;
 
 	// One writer thread
-	threads.push_back(std::jthread(
+	threads.emplace_back(
 			[&]()
 			{
 				startSignal.wait(0);
@@ -406,12 +413,12 @@ TEST(race_high, ReadLockObserveEquivalence)
 				{
 					envelope.mutate<void>([](auto& doc) { doc["counter"] = doc.value("counter", 0) + 1; });
 				}
-			}));
+			});
 
 	// Half use observe()
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -420,13 +427,13 @@ TEST(race_high, ReadLockObserveEquivalence)
 						int val = envelope.observe<int>([](const auto& doc) { return doc.value("counter", 0); });
 						if (val >= 0) observeReads.fetch_add(1, std::memory_order_relaxed);
 					}
-				}));
+				});
 	}
 
 	// Half use readLock()
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -438,7 +445,7 @@ TEST(race_high, ReadLockObserveEquivalence)
 							if (val >= 0) readLockReads.fetch_add(1, std::memory_order_relaxed);
 						}
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -462,13 +469,13 @@ TEST(race_medium, SnapshotIsolationFromReassign)
 {
 	siddiqsoft::RWLEnvelope<nlohmann::json> envelope(nlohmann::json({{"version", 0}, {"data", "initial"}}));
 
-	const uint32_t            ITERATIONS   = 1000;
+	const uint32_t            ITERATIONS = 1000;
 	std::atomic_uint          startSignal {0};
 	std::atomic_bool          inconsistencyFound {false};
 	std::vector<std::jthread> threads;
 
 	// Thread 1: Takes snapshots and verifies they're consistent
-	threads.push_back(std::jthread(
+	threads.emplace_back(
 			[&]()
 			{
 				startSignal.wait(0);
@@ -482,20 +489,20 @@ TEST(race_medium, SnapshotIsolationFromReassign)
 					if (ver == 0 && data != "initial") inconsistencyFound.store(true);
 					if (ver > 0 && data != std::string("v") + std::to_string(ver)) inconsistencyFound.store(true);
 				}
-			}));
+			});
 
 	// Thread 2: Rapidly reassigns
-	threads.push_back(std::jthread(
+	threads.emplace_back(
 			[&]()
 			{
 				startSignal.wait(0);
 				for (uint32_t j = 0; j < ITERATIONS; j++)
 				{
 					nlohmann::json newDoc {{"version", static_cast<int>(j + 1)},
-					                       {"data", std::string("v") + std::to_string(j + 1)}};
+			                               {"data", std::string("v") + std::to_string(j + 1)}};
 					envelope.reassign(std::move(newDoc));
 				}
-			}));
+			});
 
 	startSignal = 1;
 	startSignal.notify_all();
@@ -518,7 +525,7 @@ TEST(race_medium, RwaCounterWithExceptions)
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -526,21 +533,20 @@ TEST(race_medium, RwaCounterWithExceptions)
 					{
 						try
 						{
-							envelope.mutate<void>([&, j](auto& doc) {
-								doc["x"] = doc.value("x", 0) + 1;
-								if (j % 20 == 0)
-								{
-									throw std::runtime_error("intentional");
-								}
-								successfulMutates.fetch_add(1, std::memory_order_relaxed);
-							});
+							envelope.mutate<void>(
+									[&, j](auto& doc)
+									{
+										doc["x"] = doc.value("x", 0) + 1;
+										if (j % 20 == 0) { throw std::runtime_error("intentional"); }
+										successfulMutates.fetch_add(1, std::memory_order_relaxed);
+									});
 						}
 						catch (const std::runtime_error&)
 						{
 							// Expected
 						}
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -573,40 +579,44 @@ TEST(race_low, LongLockDurationStress)
 	// Writers with variable lock durations
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&, threadId = i]()
 				{
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([threadId, j](auto& doc) {
-							// Simulate variable work duration
-							auto sleepMs = (threadId + j) % 5;
-							std::this_thread::sleep_for(std::chrono::microseconds(sleepMs * 10));
-							doc["counter"] = doc.value("counter", 0) + 1;
-						});
+						envelope.mutate<void>(
+								[threadId, j](auto& doc)
+								{
+									// Simulate variable work duration
+									auto sleepMs = (threadId + j) % 5;
+									std::this_thread::sleep_for(std::chrono::microseconds(sleepMs * 10));
+									doc["counter"] = doc.value("counter", 0) + 1;
+								});
 					}
-				}));
+				});
 	}
 
 	// Readers with variable lock durations
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&, threadId = i]()
 				{
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						int val = envelope.observe<int>([threadId, j](const auto& doc) {
-							// Simulate variable work duration
-							auto sleepMs = (threadId + j) % 5;
-							std::this_thread::sleep_for(std::chrono::microseconds(sleepMs * 10));
-							return doc.value("counter", -1);
-						});
+						int val = envelope.observe<int>(
+								[threadId, j](const auto& doc)
+								{
+									// Simulate variable work duration
+									auto sleepMs = (threadId + j) % 5;
+									std::this_thread::sleep_for(std::chrono::microseconds(sleepMs * 10));
+									return doc.value("counter", -1);
+								});
 						if (val < 0) failure.store(true);
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -626,30 +636,32 @@ TEST(race_low, MemoryVisibilityAcrossThreads)
 {
 	siddiqsoft::RWLEnvelope<nlohmann::json> envelope(nlohmann::json({{"a", 0}, {"b", 0}, {"c", 0}}));
 
-	const uint32_t            ITERATIONS   = 2000;
+	const uint32_t            ITERATIONS = 2000;
 	std::atomic_uint          startSignal {0};
 	std::atomic_bool          visibilityViolation {false};
 	std::vector<std::jthread> threads;
 
 	// Writer thread: modifies multiple fields
-	threads.push_back(std::jthread(
+	threads.emplace_back(
 			[&]()
 			{
 				startSignal.wait(0);
 				for (uint32_t j = 0; j < ITERATIONS; j++)
 				{
-					envelope.mutate<void>([j](auto& doc) {
-						doc["a"] = static_cast<int>(j);
-						doc["b"] = static_cast<int>(j);
-						doc["c"] = static_cast<int>(j);
-					});
+					envelope.mutate<void>(
+							[j](auto& doc)
+							{
+								doc["a"] = static_cast<int>(j);
+								doc["b"] = static_cast<int>(j);
+								doc["c"] = static_cast<int>(j);
+							});
 				}
-			}));
+			});
 
 	// Reader threads: verify all modifications are visible
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -661,12 +673,9 @@ TEST(race_low, MemoryVisibilityAcrossThreads)
 						int  c    = snap.value("c", -1);
 
 						// All three should be equal (written together)
-						if (a != b || b != c)
-						{
-							visibilityViolation.store(true);
-						}
+						if (a != b || b != c) { visibilityViolation.store(true); }
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -680,22 +689,22 @@ TEST(race_low, MemoryVisibilityAcrossThreads)
 // Race: Concurrent move constructor with separate envelopes
 TEST(race_low, ConcurrentMoveConstructor)
 {
-	std::atomic_bool          failure {false};
-	std::atomic_uint          startSignal {0};
-	const uint32_t            ITERATIONS = 500;
-	const uint32_t            THREAD_COUNT = 4;
+	std::atomic_bool failure {false};
+	std::atomic_uint startSignal {0};
+	const uint32_t   ITERATIONS   = 500;
+	const uint32_t   THREAD_COUNT = 4;
 
 	std::vector<std::jthread> threads;
 
 	// Each thread has its own envelope to move
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(
 				[&, threadId = i]()
 				{
 					// Create envelope in thread
 					auto envelope = std::make_unique<siddiqsoft::RWLEnvelope<nlohmann::json>>(
-							nlohmann::json({{"value", static_cast<int>(threadId)}}));
+							nlohmann::json({{"value", static_cast<uint32_t>(threadId)}}));
 
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
@@ -703,23 +712,19 @@ TEST(race_low, ConcurrentMoveConstructor)
 						try
 						{
 							// Move to new envelope
-							auto newEnvelope = std::make_unique<siddiqsoft::RWLEnvelope<nlohmann::json>>(
-									std::move(*envelope));
-							envelope = std::move(newEnvelope);
+							auto newEnvelope = std::make_unique<siddiqsoft::RWLEnvelope<nlohmann::json>>(std::move(*envelope));
+							envelope         = std::move(newEnvelope);
 
 							// Verify we can still use it after move
-							int val = envelope->observe<int>([](const auto& doc) { return doc.value("value", 0); });
-							if (val != static_cast<int>(threadId))
-							{
-								failure.store(true);
-							}
+							auto val = envelope->observe<uint32_t>([](const auto& doc) { return doc.value("value", 0); });
+							if (val != static_cast<uint32_t>(threadId)) { failure.store(true); }
 						}
 						catch (const std::exception&)
 						{
 							failure.store(true);
 						}
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
