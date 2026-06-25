@@ -205,7 +205,7 @@ TEST(race_critical, NoDeadlockUnderStress)
 	// Mix of all operations
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		threads.emplace_back(std::jthread {[&, threadId = i]()
+		threads.emplace_back([&, threadId = i]()
 		                                   {
 											   startSignal.wait(0);
 											   for (uint32_t j = 0; j < ITERATIONS; j++)
@@ -233,7 +233,7 @@ TEST(race_critical, NoDeadlockUnderStress)
 												   }
 											   }
 											   completedThreads.fetch_add(1, std::memory_order_relaxed);
-										   }});
+										   });
 	}
 
 	startSignal = 1;
@@ -271,7 +271,7 @@ TEST(race_high, ExceptionSafetyUnderContention)
 	// Threads that throw exceptions
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.emplace_back(std::jthread {[&]()
+		threads.emplace_back([&]()
 		                                   {
 											   startSignal.wait(0);
 											   for (uint32_t j = 0; j < ITERATIONS; j++)
@@ -290,7 +290,7 @@ TEST(race_high, ExceptionSafetyUnderContention)
 													   exceptionCount.fetch_add(1, std::memory_order_relaxed);
 												   }
 											   }
-										   }});
+										   });
 	}
 
 	// Threads that don't throw

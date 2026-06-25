@@ -102,49 +102,51 @@ TEST(tests, TwoThreads)
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.emplace_back(std::jthread {[&]()
-		                                      {
-												  thread_local std::mt19937               rng {std::random_device {}()};
-												  std::uniform_int_distribution<uint32_t> dist(0, READ_LIMIT - 1);
-												  startSignal.wait(0);
-												  for (uint32_t j = 0; j < READ_LIMIT; j++)
-												  {
-													  myContainer.observe<void>([&](auto const& o) { readCounter++; });
-													  std::this_thread::sleep_for(std::chrono::nanoseconds(dist(rng)));
-												  }
-												  readerFinished++;
-												  readerFinished.notify_all();
-											  }});
+		readerPool.emplace_back(
+				[&]()
+				{
+					thread_local std::mt19937               rng {std::random_device {}()};
+					std::uniform_int_distribution<uint32_t> dist(0, READ_LIMIT - 1);
+					startSignal.wait(0);
+					for (uint32_t j = 0; j < READ_LIMIT; j++)
+					{
+						myContainer.observe<void>([&](auto const& o) { readCounter++; });
+						std::this_thread::sleep_for(std::chrono::nanoseconds(dist(rng)));
+					}
+					readerFinished++;
+					readerFinished.notify_all();
+				});
 	}
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.emplace_back(std::jthread {[&]()
-		                                      {
-												  thread_local std::mt19937               rng {std::random_device {}()};
-												  std::uniform_int_distribution<uint32_t> dist(0, WRITE_LIMIT - 1);
+		readerPool.emplace_back(
+				[&]()
+				{
+					thread_local std::mt19937               rng {std::random_device {}()};
+					std::uniform_int_distribution<uint32_t> dist(0, WRITE_LIMIT - 1);
 #if defined(WIN32)
-												  unsigned tid = GetCurrentThreadId();
+					unsigned tid = GetCurrentThreadId();
 #else
-												  std::stringstream ss {};
-												  ss << std::this_thread::get_id();
-												  auto tid = ss.str();
+					std::stringstream ss {};
+					ss << std::this_thread::get_id();
+					auto tid = ss.str();
 #endif
-												  startSignal.wait(0);
-												  for (uint32_t j = 0; j < WRITE_LIMIT; j++)
-												  {
-													  myContainer.mutate<void>(
-															  [&writeCounter, tid, j](auto& o)
-															  {
-																  o["lastThreadId"] = tid;
-																  o["j"]            = j;
-																  o["writeCount"]   = ++writeCounter;
-															  });
-													  std::this_thread::sleep_for(std::chrono::nanoseconds(dist(rng)));
-												  }
-												  writerFinished++;
-												  writerFinished.notify_all();
-											  }});
+					startSignal.wait(0);
+					for (uint32_t j = 0; j < WRITE_LIMIT; j++)
+					{
+						myContainer.mutate<void>(
+								[&writeCounter, tid, j](auto& o)
+								{
+									o["lastThreadId"] = tid;
+									o["j"]            = j;
+									o["writeCount"]   = ++writeCounter;
+								});
+						std::this_thread::sleep_for(std::chrono::nanoseconds(dist(rng)));
+					}
+					writerFinished++;
+					writerFinished.notify_all();
+				});
 	}
 
 	// Let's signal threads to start!
@@ -183,25 +185,26 @@ TEST(tests, TwoThreadsBare)
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.emplace_back(std::jthread {[&]()
-		                                      {
-												  thread_local std::mt19937               rng {std::random_device {}()};
-												  std::uniform_int_distribution<uint32_t> dist(0, READ_LIMIT - 1);
-												  startSignal.wait(0);
-												  for (uint32_t j = 0; j < READ_LIMIT; j++)
-												  {
-													  if (auto [o, rl] = myContainer.readLock(); rl) { readCounter++; }
+		readerPool.emplace_back(
+				[&]()
+				{
+					thread_local std::mt19937               rng {std::random_device {}()};
+					std::uniform_int_distribution<uint32_t> dist(0, READ_LIMIT - 1);
+					startSignal.wait(0);
+					for (uint32_t j = 0; j < READ_LIMIT; j++)
+					{
+						if (auto [o, rl] = myContainer.readLock(); rl) { readCounter++; }
 
-													  std::this_thread::sleep_for(std::chrono::milliseconds(dist(rng)));
-												  }
-												  readerFinished++;
-												  readerFinished.notify_all();
-											  }});
+						std::this_thread::sleep_for(std::chrono::milliseconds(dist(rng)));
+					}
+					readerFinished++;
+					readerFinished.notify_all();
+				});
 	}
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.emplace_back(std::jthread(
+		readerPool.emplace_back(
 				[&]()
 				{
 					thread_local std::mt19937               rng {std::random_device {}()};
@@ -226,7 +229,7 @@ TEST(tests, TwoThreadsBare)
 					}
 					writerFinished++;
 					writerFinished.notify_all();
-				}));
+				});
 	}
 
 	// Let's signal threads to start!
@@ -486,7 +489,7 @@ TEST(stress, MonotonicCounterIntegrity)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -499,12 +502,12 @@ TEST(stress, MonotonicCounterIntegrity)
 									doc["counter"] = cur + 1;
 								});
 					}
-				}));
+				});
 	}
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -515,7 +518,7 @@ TEST(stress, MonotonicCounterIntegrity)
 						if (current < lastSeen) { integrityViolation.store(true); }
 						lastSeen = current;
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -542,7 +545,7 @@ TEST(stress, SnapshotConsistency)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -556,12 +559,12 @@ TEST(stress, SnapshotConsistency)
 									doc["b"]  = next;
 								});
 					}
-				}));
+				});
 	}
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -570,7 +573,7 @@ TEST(stress, SnapshotConsistency)
 						auto snap = envelope.snapshot();
 						if (snap.value("a", -1) != snap.value("b", -2)) { inconsistencyFound.store(true); }
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -592,7 +595,7 @@ TEST(stress, ConcurrentReassignVsObserve)
 	std::atomic_bool          corruptionFound {false};
 	std::vector<std::jthread> threads;
 
-	threads.emplace_back(std::jthread(
+	threads.emplace_back(
 			[&]()
 			{
 				startSignal.wait(0);
@@ -602,11 +605,11 @@ TEST(stress, ConcurrentReassignVsObserve)
 			                               {"data", std::string("v") + std::to_string(j + 1)}};
 					envelope.reassign(std::move(newDoc));
 				}
-			}));
+			});
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -628,7 +631,7 @@ TEST(stress, ConcurrentReassignVsObserve)
 							corruptionFound.store(true);
 						}
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -655,7 +658,7 @@ TEST(stress, HighContentionZeroSleep)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -663,12 +666,12 @@ TEST(stress, HighContentionZeroSleep)
 					{
 						envelope.mutate<void>([](auto& doc) { doc["sum"] = doc.value("sum", 0) + 1; });
 					}
-				}));
+				});
 	}
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -678,7 +681,7 @@ TEST(stress, HighContentionZeroSleep)
 						EXPECT_GE(val, 0);
 						totalReads.fetch_add(1, std::memory_order_relaxed);
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -706,7 +709,7 @@ TEST(stress, MixedApiConcurrency)
 	// mutate() writers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -719,13 +722,13 @@ TEST(stress, MixedApiConcurrency)
 									mutateCount.fetch_add(1, std::memory_order_relaxed);
 								});
 					}
-				}));
+				});
 	}
 
 	// writeLock() writers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -737,13 +740,13 @@ TEST(stress, MixedApiConcurrency)
 							writeLockCount.fetch_add(1, std::memory_order_relaxed);
 						}
 					}
-				}));
+				});
 	}
 
 	// observe() readers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -752,13 +755,13 @@ TEST(stress, MixedApiConcurrency)
 						int val = envelope.observe<int>([](const auto& doc) { return doc.value("counter", -1); });
 						if (val < 0) failure.store(true);
 					}
-				}));
+				});
 	}
 
 	// readLock() readers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -769,13 +772,13 @@ TEST(stress, MixedApiConcurrency)
 							if (doc.value("counter", -1) < 0) failure.store(true);
 						}
 					}
-				}));
+				});
 	}
 
 	// snapshot() readers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -784,7 +787,7 @@ TEST(stress, MixedApiConcurrency)
 						auto snap = envelope.snapshot();
 						if (snap.value("counter", -1) < 0) failure.store(true);
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -812,7 +815,7 @@ TEST(stress, RwaCounterAccuracy)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -820,12 +823,12 @@ TEST(stress, RwaCounterAccuracy)
 					{
 						envelope.mutate<void>([](auto& doc) { doc["x"] = doc.value("x", 0) + 1; });
 					}
-				}));
+				});
 	}
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -833,7 +836,7 @@ TEST(stress, RwaCounterAccuracy)
 					{
 						envelope.observe<int>([](const auto& doc) { return doc.value("x", 0); });
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -864,7 +867,7 @@ TEST(stress, ConcurrentObserveWithReturn)
 	// Writers
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -872,13 +875,13 @@ TEST(stress, ConcurrentObserveWithReturn)
 					{
 						envelope.mutate<void>([](auto& doc) { doc["value"] = doc.value("value", 0) + 1; });
 					}
-				}));
+				});
 	}
 
 	// Readers that return values — verify return is always non-negative
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.emplace_back(std::jthread(
+		threads.emplace_back(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -893,7 +896,7 @@ TEST(stress, ConcurrentObserveWithReturn)
 						bool has = envelope.observe<bool>([](const auto& doc) { return doc.contains("value"); });
 						if (!has) failure.store(true);
 					}
-				}));
+				});
 	}
 
 	startSignal = 1;
@@ -918,18 +921,19 @@ TEST(stress, SharedReadLockConcurrency)
 	// All readers — no writers. All should run concurrently without blocking.
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.emplace_back(std::jthread {[&]()
-		                                   {
-											   startSignal.wait(0);
-											   for (uint32_t j = 0; j < ITERATIONS; j++)
-											   {
-												   if (auto const& [doc, rl] = envelope.readLock(); rl)
-												   {
-													   EXPECT_EQ("immutable", doc.value("data", ""));
-													   totalReads.fetch_add(1, std::memory_order_relaxed);
-												   }
-											   }
-										   }});
+		threads.emplace_back(
+				[&]()
+				{
+					startSignal.wait(0);
+					for (uint32_t j = 0; j < ITERATIONS; j++)
+					{
+						if (auto const& [doc, rl] = envelope.readLock(); rl)
+						{
+							EXPECT_EQ("immutable", doc.value("data", ""));
+							totalReads.fetch_add(1, std::memory_order_relaxed);
+						}
+					}
+				});
 	}
 
 	startSignal = 1;

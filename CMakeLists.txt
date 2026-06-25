@@ -38,7 +38,7 @@ target_include_directories(${PROJECT_NAME}
                             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 # Require C++17 minimum (uses std::shared_mutex, std::tuple, std::shared_lock, std::unique_lock)
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_${CMAKE_CXX_STANDARD})
 
 
 # ____________________________________
