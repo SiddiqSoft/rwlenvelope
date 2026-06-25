@@ -102,51 +102,49 @@ TEST(tests, TwoThreads)
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread(
-				[&]()
-				{
-					thread_local std::mt19937               rng {std::random_device {}()};
-					std::uniform_int_distribution<uint32_t> dist(0, READ_LIMIT - 1);
-					startSignal.wait(0);
-					for (uint32_t j = 0; j < READ_LIMIT; j++)
-					{
-						myContainer.observe<void>([&](auto const& o) { readCounter++; });
-						std::this_thread::sleep_for(std::chrono::nanoseconds(dist(rng)));
-					}
-					readerFinished++;
-					readerFinished.notify_all();
-				}));
+		readerPool.emplace_back(std::jthread {[&]()
+		                                      {
+												  thread_local std::mt19937               rng {std::random_device {}()};
+												  std::uniform_int_distribution<uint32_t> dist(0, READ_LIMIT - 1);
+												  startSignal.wait(0);
+												  for (uint32_t j = 0; j < READ_LIMIT; j++)
+												  {
+													  myContainer.observe<void>([&](auto const& o) { readCounter++; });
+													  std::this_thread::sleep_for(std::chrono::nanoseconds(dist(rng)));
+												  }
+												  readerFinished++;
+												  readerFinished.notify_all();
+											  }});
 	}
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread(
-				[&]()
-				{
-					thread_local std::mt19937               rng {std::random_device {}()};
-					std::uniform_int_distribution<uint32_t> dist(0, WRITE_LIMIT - 1);
+		readerPool.emplace_back(std::jthread {[&]()
+		                                      {
+												  thread_local std::mt19937               rng {std::random_device {}()};
+												  std::uniform_int_distribution<uint32_t> dist(0, WRITE_LIMIT - 1);
 #if defined(WIN32)
-					unsigned tid = GetCurrentThreadId();
+												  unsigned tid = GetCurrentThreadId();
 #else
-					std::stringstream ss {};
-					ss << std::this_thread::get_id();
-					auto tid = ss.str();
+												  std::stringstream ss {};
+												  ss << std::this_thread::get_id();
+												  auto tid = ss.str();
 #endif
-					startSignal.wait(0);
-					for (uint32_t j = 0; j < WRITE_LIMIT; j++)
-					{
-						myContainer.mutate<void>(
-								[&writeCounter, tid, j](auto& o)
-								{
-									o["lastThreadId"] = tid;
-									o["j"]            = j;
-									o["writeCount"]   = ++writeCounter;
-								});
-						std::this_thread::sleep_for(std::chrono::nanoseconds(dist(rng)));
-					}
-					writerFinished++;
-					writerFinished.notify_all();
-				}));
+												  startSignal.wait(0);
+												  for (uint32_t j = 0; j < WRITE_LIMIT; j++)
+												  {
+													  myContainer.mutate<void>(
+															  [&writeCounter, tid, j](auto& o)
+															  {
+																  o["lastThreadId"] = tid;
+																  o["j"]            = j;
+																  o["writeCount"]   = ++writeCounter;
+															  });
+													  std::this_thread::sleep_for(std::chrono::nanoseconds(dist(rng)));
+												  }
+												  writerFinished++;
+												  writerFinished.notify_all();
+											  }});
 	}
 
 	// Let's signal threads to start!
@@ -185,26 +183,25 @@ TEST(tests, TwoThreadsBare)
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread(
-				[&]()
-				{
-					thread_local std::mt19937               rng {std::random_device {}()};
-					std::uniform_int_distribution<uint32_t> dist(0, READ_LIMIT - 1);
-					startSignal.wait(0);
-					for (uint32_t j = 0; j < READ_LIMIT; j++)
-					{
-						if (auto [o, rl] = myContainer.readLock(); rl) { readCounter++; }
+		readerPool.emplace_back(std::jthread {[&]()
+		                                      {
+												  thread_local std::mt19937               rng {std::random_device {}()};
+												  std::uniform_int_distribution<uint32_t> dist(0, READ_LIMIT - 1);
+												  startSignal.wait(0);
+												  for (uint32_t j = 0; j < READ_LIMIT; j++)
+												  {
+													  if (auto [o, rl] = myContainer.readLock(); rl) { readCounter++; }
 
-						std::this_thread::sleep_for(std::chrono::milliseconds(dist(rng)));
-					}
-					readerFinished++;
-					readerFinished.notify_all();
-				}));
+													  std::this_thread::sleep_for(std::chrono::milliseconds(dist(rng)));
+												  }
+												  readerFinished++;
+												  readerFinished.notify_all();
+											  }});
 	}
 
 	for (uint32_t i = 0; i < THREAD_COUNT; i++)
 	{
-		readerPool.push_back(std::jthread(
+		readerPool.emplace_back(std::jthread(
 				[&]()
 				{
 					thread_local std::mt19937               rng {std::random_device {}()};
@@ -278,11 +275,13 @@ TEST(edge, MutateWithReturnValue)
 {
 	siddiqsoft::RWLEnvelope<nlohmann::json> envelope(nlohmann::json({{"counter", 10}}));
 
-	int oldValue = envelope.mutate<int>([](auto& doc) {
-		int prev         = doc.value("counter", 0);
-		doc["counter"]   = prev + 5;
-		return prev;
-	});
+	int oldValue = envelope.mutate<int>(
+			[](auto& doc)
+			{
+				int prev       = doc.value("counter", 0);
+				doc["counter"] = prev + 5;
+				return prev;
+			});
 
 	EXPECT_EQ(10, oldValue);
 	EXPECT_EQ(15, envelope.observe<int>([](const auto& doc) { return doc.value("counter", 0); }));
@@ -318,7 +317,12 @@ TEST(edge, NonJsonType)
 	EXPECT_EQ(3, envelope.observe<size_t>([](const auto& v) { return v.size(); }));
 	EXPECT_EQ(2, envelope.observe<int>([](const auto& v) { return v[1]; }));
 
-	envelope.mutate<void>([](auto& v) { v.push_back(4); v.push_back(5); });
+	envelope.mutate<void>(
+			[](auto& v)
+			{
+				v.emplace_back(4);
+				v.emplace_back(5);
+			});
 	EXPECT_EQ(5, envelope.observe<size_t>([](const auto& v) { return v.size(); }));
 
 	auto snap = envelope.snapshot();
@@ -388,10 +392,12 @@ TEST(edge, ThrowingMutateCallback)
 	// This mutate throws after partial modification
 	try
 	{
-		envelope.mutate<void>([](auto& doc) {
-			doc["value"] = 999;
-			throw std::runtime_error("intentional");
-		});
+		envelope.mutate<void>(
+				[](auto& doc)
+				{
+					doc["value"] = 999;
+					throw std::runtime_error("intentional");
+				});
 	}
 	catch (const std::runtime_error&)
 	{
@@ -480,23 +486,25 @@ TEST(stress, MonotonicCounterIntegrity)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([](auto& doc) {
-							auto cur       = doc.value("counter", 0);
-							doc["counter"] = cur + 1;
-						});
+						envelope.mutate<void>(
+								[](auto& doc)
+								{
+									auto cur       = doc.value("counter", 0);
+									doc["counter"] = cur + 1;
+								});
 					}
 				}));
 	}
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -534,24 +542,26 @@ TEST(stress, SnapshotConsistency)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([](auto& doc) {
-							auto next = doc.value("a", 0) + 1;
-							doc["a"]  = next;
-							doc["b"]  = next;
-						});
+						envelope.mutate<void>(
+								[](auto& doc)
+								{
+									auto next = doc.value("a", 0) + 1;
+									doc["a"]  = next;
+									doc["b"]  = next;
+								});
 					}
 				}));
 	}
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -582,21 +592,21 @@ TEST(stress, ConcurrentReassignVsObserve)
 	std::atomic_bool          corruptionFound {false};
 	std::vector<std::jthread> threads;
 
-	threads.push_back(std::jthread(
+	threads.emplace_back(std::jthread(
 			[&]()
 			{
 				startSignal.wait(0);
 				for (uint32_t j = 0; j < ITERATIONS; j++)
 				{
 					nlohmann::json newDoc {{"version", static_cast<int>(j + 1)},
-					                       {"data", std::string("v") + std::to_string(j + 1)}};
+			                               {"data", std::string("v") + std::to_string(j + 1)}};
 					envelope.reassign(std::move(newDoc));
 				}
 			}));
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -645,7 +655,7 @@ TEST(stress, HighContentionZeroSleep)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -658,7 +668,7 @@ TEST(stress, HighContentionZeroSleep)
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -696,16 +706,18 @@ TEST(stress, MixedApiConcurrency)
 	// mutate() writers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([&](auto& doc) {
-							doc["counter"] = doc.value("counter", 0) + 1;
-							mutateCount.fetch_add(1, std::memory_order_relaxed);
-						});
+						envelope.mutate<void>(
+								[&](auto& doc)
+								{
+									doc["counter"] = doc.value("counter", 0) + 1;
+									mutateCount.fetch_add(1, std::memory_order_relaxed);
+								});
 					}
 				}));
 	}
@@ -713,7 +725,7 @@ TEST(stress, MixedApiConcurrency)
 	// writeLock() writers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -731,7 +743,7 @@ TEST(stress, MixedApiConcurrency)
 	// observe() readers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -746,7 +758,7 @@ TEST(stress, MixedApiConcurrency)
 	// readLock() readers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -763,7 +775,7 @@ TEST(stress, MixedApiConcurrency)
 	// snapshot() readers
 	for (uint32_t i = 0; i < 4; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -800,7 +812,7 @@ TEST(stress, RwaCounterAccuracy)
 
 	for (uint32_t i = 0; i < WRITER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -813,7 +825,7 @@ TEST(stress, RwaCounterAccuracy)
 
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -852,7 +864,7 @@ TEST(stress, ConcurrentObserveWithReturn)
 	// Writers
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -866,7 +878,7 @@ TEST(stress, ConcurrentObserveWithReturn)
 	// Readers that return values — verify return is always non-negative
 	for (uint32_t i = 0; i < THREAD_COUNT / 2; i++)
 	{
-		threads.push_back(std::jthread(
+		threads.emplace_back(std::jthread(
 				[&]()
 				{
 					startSignal.wait(0);
@@ -906,19 +918,18 @@ TEST(stress, SharedReadLockConcurrency)
 	// All readers — no writers. All should run concurrently without blocking.
 	for (uint32_t i = 0; i < READER_COUNT; i++)
 	{
-		threads.push_back(std::jthread(
-				[&]()
-				{
-					startSignal.wait(0);
-					for (uint32_t j = 0; j < ITERATIONS; j++)
-					{
-						if (auto const& [doc, rl] = envelope.readLock(); rl)
-						{
-							EXPECT_EQ("immutable", doc.value("data", ""));
-							totalReads.fetch_add(1, std::memory_order_relaxed);
-						}
-					}
-				}));
+		threads.emplace_back(std::jthread {[&]()
+		                                   {
+											   startSignal.wait(0);
+											   for (uint32_t j = 0; j < ITERATIONS; j++)
+											   {
+												   if (auto const& [doc, rl] = envelope.readLock(); rl)
+												   {
+													   EXPECT_EQ("immutable", doc.value("data", ""));
+													   totalReads.fetch_add(1, std::memory_order_relaxed);
+												   }
+											   }
+										   }});
 	}
 
 	startSignal = 1;
