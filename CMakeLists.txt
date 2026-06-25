@@ -46,6 +46,17 @@ target_compile_options( ${PROJECT_NAME}
                         $<$<CXX_COMPILER_ID:Clang>:-fexperimental-library> )
 
 # ____________________________________
+# Installation
+install(TARGETS ${PROJECT_NAME}
+        EXPORT ${PROJECT_NAME}Targets)
+
+install(DIRECTORY include/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(FILES pack/SiddiqSoft.RWLEnvelope.natvis
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
+
+# ____________________________________
 # Dependencies
 
 # ____________________________________

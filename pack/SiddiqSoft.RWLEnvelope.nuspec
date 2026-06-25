@@ -58,7 +58,8 @@
 		<file src="..\README.md" target="docs\" />
 		<file src="..\API.md" target="docs\" />
 
-		<!-- MSBuild .targets files -->
+		<!-- MSBuild .targets files and debugger visualizers -->
 		<file src="SiddiqSoft.RWLEnvelope.targets" target="build\native" />
+		<file src="SiddiqSoft.RWLEnvelope.natvis" target="build\native" />
 	</files>
 </package>
