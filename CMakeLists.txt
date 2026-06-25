@@ -6,7 +6,7 @@
 #   BUILD_TESTS ON
 #   CI_BUILDID must be set to the gitversion
 # 
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.31)
 
 # _________________
 # Version detection; must preceed the declaration of the actual project()
@@ -20,13 +20,12 @@ project(RWLEnvelope
         VERSION         "${CURRENT_PROJECT_VERSION}"
         LANGUAGES       CXX
         HOMEPAGE_URL    "%%myurl%%"
-        DESCRIPTION     "Classes to allow you to build asynchrony in your applications using standard C++ jthread, semaphore, deque")
+        DESCRIPTION     "Header-only C++ template library providing a simple, convenient envelope-access model for thread-safe access to objects using reader-writer locks")
 
 
 # ____________________________________
 # Options; define and declare defaults
 option(${PROJECT_NAME}_BUILD_TESTS "${PROJECT_NAME} - Build tests. Uncheck for install only runs" OFF)
-option(${${PROJECT_NAME}_BUILD_TESTS} "${PROJECT_NAME} - Build tests. Uncheck for install only runs" OFF)
 
 # ____________________________________
 #  Library Definition
@@ -37,24 +36,9 @@ target_include_directories(${PROJECT_NAME}
                             INTERFACE
                             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
 
-# For std::stop_token and std::jthread on Clang 18 and Clang 19 we need to enable
-# the experimental-library flag.
-target_compile_options( ${PROJECT_NAME}
-                        INTERFACE
-                        $<$<CXX_COMPILER_ID:Clang>:-fexperimental-library> )
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_23)
 
-# ____________________________________
-# Installation
-install(TARGETS ${PROJECT_NAME}
-        EXPORT ${PROJECT_NAME}Targets)
-
-install(DIRECTORY include/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
-install(FILES pack/SiddiqSoft.RWLEnvelope.natvis
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
 
 # ____________________________________
 # Dependencies
