@@ -2,16 +2,16 @@
 #   Copyright 2024 Abdulkareem Siddiq. All rights reserved.
 #   See LICENSE file
 #
-#   When building from our CI server, the following options must be set
-#   BUILD_TESTS ON
-#   CI_BUILDID must be set to the gitversion
+#   When building from our CI server, the following options must be set:
+#   - RWLEnvelope_BUILD_TESTS=ON
+#   - CI_BUILDID must be set to the gitversion
 # 
-cmake_minimum_required(VERSION 3.31)
+cmake_minimum_required(VERSION 3.25)
 
 # _________________
 # Version detection; must preceed the declaration of the actual project()
 # Figures out the value ${CURRENT_PROJECT_VERSION} and therefore the ${PROJECT_VERSION}
-# Brings in the CPM module into pack/CPM.make
+# Brings in the CPM module into pack/CMakeCommonHelpers.cmake
 include(pack/CMakeCommonHelpers.cmake)
 
 # ______________________
@@ -19,7 +19,7 @@ include(pack/CMakeCommonHelpers.cmake)
 project(RWLEnvelope
         VERSION         "${CURRENT_PROJECT_VERSION}"
         LANGUAGES       CXX
-        HOMEPAGE_URL    "%%myurl%%"
+        HOMEPAGE_URL    "https://github.com/SiddiqSoft/RWLEnvelope"
         DESCRIPTION     "Header-only C++ template library providing a simple, convenient envelope-access model for thread-safe access to objects using reader-writer locks")
 
 
@@ -37,7 +37,8 @@ target_include_directories(${PROJECT_NAME}
                             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_23)
+# Require C++17 minimum (uses std::shared_mutex, std::tuple, std::shared_lock, std::unique_lock)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
 
 # ____________________________________

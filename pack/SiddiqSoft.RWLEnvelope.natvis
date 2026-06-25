@@ -108,8 +108,8 @@
     </Expand>
   </Type>
 
-  <!-- Specialization for pointers -->
-  <Type Name="siddiqsoft::RWLEnvelope&lt;*&gt;">
+  <!-- Specialization for pointers - must come after generic fallback -->
+  <Type Name="siddiqsoft::RWLEnvelope&lt;*,*&gt;">
     <DisplayString>RWLEnvelope&lt;pointer&gt; = {_item} [Actions: {_rwa}]</DisplayString>
     <Expand>
       <Item Name="[Pointer]">_item</Item>
@@ -117,9 +117,9 @@
     </Expand>
   </Type>
 
-  <!-- Specialization for std::vector -->
+  <!-- Specialization for std::vector - uses generic natvis for vector display -->
   <Type Name="siddiqsoft::RWLEnvelope&lt;std::vector&lt;*&gt;&gt;">
-    <DisplayString>RWLEnvelope&lt;vector&gt; [Size: {_item._Mypair._Myval2._Mysize}] [Actions: {_rwa}]</DisplayString>
+    <DisplayString>RWLEnvelope&lt;vector&gt; [Actions: {_rwa}]</DisplayString>
     <Expand>
       <Item Name="[Vector]">_item</Item>
       <Item Name="[Read-Write Actions]">_rwa</Item>
