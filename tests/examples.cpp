@@ -10,13 +10,13 @@ TEST(examples, WithCallbacks)
 	siddiqsoft::RWLEnvelope<nlohmann::json> docl({{"foo", "bar"}, {"few", "lar"}});
 
 	// Check we have pre-change value..
-	EXPECT_EQ("bar", docl.observe<>([](const auto& doc) { return doc.value("foo", ""); }));
+	EXPECT_EQ("bar", docl.observe<>([](const auto& doc) noexcept { return doc.value("foo", ""); }));
 
 	// Modify the item
-	docl.mutate<>([](auto& doc) { doc["foo"] = "bare"; });
+	docl.mutate<>([](auto& doc) noexcept { doc["foo"] = "bare"; });
 
 	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
-	EXPECT_TRUE(docl.observe<>([](const auto& doc) { return doc.value("foo", "").find("bare") == 0; }));
+	EXPECT_TRUE(docl.observe<>([](const auto& doc) noexcept { return doc.value("foo", "").find("bare") == 0; }));
 
 	// Check to make sure that the statistics match
 	auto info = nlohmann::json(docl);
@@ -51,13 +51,13 @@ TEST(examples, AssignWithCallbacks)
 
 	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
 	EXPECT_TRUE(docl.observe<>(
-			[](const auto& doc) -> bool
+			[](const auto& doc) noexcept -> bool
 			{
 				return (doc.value("fee", 0xfa17) == 0x0fee) && (doc.value("baa", 0xfa17) == 0x0baa) &&
 		               (doc.value("bee", 0xfa17) == 0x0bee);
 			}));
 
-	EXPECT_EQ(3, docl.observe<>([](const auto& doc) { return doc.size(); }));
+	EXPECT_EQ(3, docl.observe<>([](const auto& doc) noexcept { return doc.size(); }));
 }
 
 
@@ -89,8 +89,8 @@ TEST(examples, CallbacksWithGlobalArgs)
 	std::atomic_uint              counter {0};
 	siddiqsoft::RWLEnvelope<Demo> safeDemo;
 
-	auto localValue = safeDemo.mutate(
-			[](auto& dd, auto& theCounter)
+	auto localValue = safeDemo.mutate<>(
+			[](auto& dd, auto& theCounter) noexcept
 			{
 				// Store the current value..
 				dd.val = theCounter.load();
@@ -106,7 +106,7 @@ TEST(examples, CallbacksWithGlobalArgs)
 	EXPECT_EQ(0, localValue);
 
 	auto localValue2nd = safeDemo.observe(
-			[](const auto& dd, auto& theCounter)
+			[](const auto& dd, auto& theCounter) noexcept
 			{
 				theCounter++;
 				return dd.val;

@@ -30,13 +30,12 @@
         },
         {
             "name": "(clang) Launch",
-            "type": "cppdbg",
+            "type": "lldb",
             "request": "launch",
             "program": "${command:cmake.launchTargetPath}",
             "args": [],
             "cwd": "${workspaceFolder}",
             "externalConsole": false,
-            "MIMode": "lldb",
             "env": {
                 "LSAN_OPTIONS": "verbosity=1:log_threads=1"
             },

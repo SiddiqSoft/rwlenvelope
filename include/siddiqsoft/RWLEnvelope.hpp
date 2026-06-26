@@ -36,6 +36,7 @@
 
 #pragma once
 
+#include <type_traits>
 #ifndef RWLENVELOPE_HPP
 #define RWLENVELOPE_HPP
 
@@ -43,6 +44,7 @@
 #include <shared_mutex>
 #include <tuple>
 #include <utility>
+#include <concepts>
 
 #if !__has_cpp_attribute(nodiscard)
 #error "We really should have [[nodiscard]]"
@@ -54,9 +56,28 @@
 
 namespace siddiqsoft
 {
+	/// @brief Concept to enforce that callbacks do not throw exceptions (for const/read-only access)
+	/// Callbacks must be marked noexcept and accept const T& as first parameter
+	/// @tparam Callback The callback type to check
+	/// @tparam Args The argument types to pass to the callback
+	template <typename T, typename Callback, typename... Args>
+	concept ObserveCallbackNoexcept = requires(Callback f, const T& item, Args... args) {
+		{ f(item, std::forward<Args>(args)...) } noexcept;
+	};
+
+	/// @brief Concept to enforce that callbacks do not throw exceptions (for mutable access)
+	/// Callbacks must be marked noexcept and accept T& as first parameter
+	/// @tparam Callback The callback type to check
+	/// @tparam Args The argument types to pass to the callback
+	template <typename T, typename Callback, typename... Args>
+	concept MutateCallbackNoexcept = requires(Callback f, T& item, Args... args) {
+		{ f(item, std::forward<Args>(args)...) } noexcept;
+	};
+
+
 	/// @brief Implements a simple envelope-access model to make it easy for clients to use the reader-writer lock model.
 	/// @tparam T Type for your object which is to be "enveloped"
-	template <class T> class RWLEnvelope
+	template <typename T> class RWLEnvelope
 	{
 		using RWLock = std::unique_lock<std::shared_mutex>;
 		using RLock  = std::shared_lock<std::shared_mutex>;
@@ -145,9 +166,15 @@ namespace siddiqsoft
 
 
 		/// @brief Perform a read-only action where the object is not "written" to and the read operations are shared amongst other reader threads
-		/// @tparam Callback The callback must accept the T& as the first argument along with any addition arguments
+		/// @tparam Callback The callback must accept const T& as the first argument along with any additional arguments
+		/// @tparam Args Additional arguments to forward to the callback
+		/// @param cbf The callback function (must be noexcept)
+		/// @param args Additional arguments to pass to the callback
 		/// @return Returns (forwards) the return from the callback
-		template <typename Callback, typename... Args> auto observe(Callback cbf, Args&&... args) const
+		/// @note The callback MUST be marked noexcept. Callbacks that may throw will not compile.
+		template <typename Callback, typename... Args>
+			requires ObserveCallbackNoexcept<T, Callback, Args...>
+		auto observe(Callback cbf, Args&&... args) const 
 		{
 			RLock myLock(_sMutex);
 			return cbf(_item, std::forward<Args>(args)...);
@@ -155,14 +182,26 @@ namespace siddiqsoft
 
 
 		/// @brief Perform an action where the object maybe "written" to by blocking all other threads.
-		/// @tparam R The type of the return from the callback
-		/// @param callback The callback may modify the contents and gets a readwrite lock access to the stored data
+		/// @tparam Callback The callback type (must be noexcept)
+		/// @tparam Args Additional argument types
+		/// @param cbf The callback function that may modify the contents (must be noexcept)
+		/// @param args Additional arguments to pass to the callback
 		/// @return Returns (forwards) the return from the callback
-		template <typename Callback, typename... Args> auto mutate(Callback cbf, Args&&... args)
+		/// @note The callback MUST be marked noexcept. Callbacks that may throw will not compile.
+		template <typename Callback, typename... Args>
+			requires MutateCallbackNoexcept<T, Callback, Args...>
+		auto mutate(Callback cbf, Args&&... args) 
 		{
 			RWLock myWriterLock(_sMutex);
 			rone   d(_rwa); // we increment the housekeeping counter on each callback
-			return cbf(_item, std::forward<Args>(args)...);
+			
+			try
+			{
+				return cbf(_item, std::forward<Args>(args)...);
+			}
+			catch (...)
+			{
+			}
 		}
 
 
