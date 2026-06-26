@@ -36,7 +36,6 @@
 
 #pragma once
 
-#include <type_traits>
 #ifndef RWLENVELOPE_HPP
 #define RWLENVELOPE_HPP
 
@@ -45,6 +44,8 @@
 #include <tuple>
 #include <utility>
 #include <concepts>
+#include <exception>
+#include <type_traits>
 
 #if !__has_cpp_attribute(nodiscard)
 #error "We really should have [[nodiscard]]"
@@ -60,8 +61,8 @@ namespace siddiqsoft
 	/// Callbacks must be marked noexcept and accept const T& as first parameter
 	/// @tparam Callback The callback type to check
 	/// @tparam Args The argument types to pass to the callback
-	template <typename T, typename Callback, typename... Args>
-	concept ObserveCallbackNoexcept = requires(Callback f, const T& item, Args... args) {
+	template <typename ContainerType, typename Callback, typename... Args>
+	concept ObserveCallbackNoexcept = requires(Callback f, const ContainerType& item, Args... args) {
 		{ f(item, std::forward<Args>(args)...) } noexcept;
 	};
 
@@ -69,16 +70,16 @@ namespace siddiqsoft
 	/// Callbacks must be marked noexcept and accept T& as first parameter
 	/// @tparam Callback The callback type to check
 	/// @tparam Args The argument types to pass to the callback
-	template <typename T, typename Callback, typename... Args>
-	concept MutateCallbackNoexcept = requires(Callback f, T& item, Args... args) {
+	template <typename ContainerType, typename Callback, typename... Args>
+	concept MutateCallbackNoexcept = requires(Callback f, ContainerType& item, Args... args) {
 		{ f(item, std::forward<Args>(args)...) } noexcept;
 	};
 
 
 	/// @brief Implements a simple envelope-access model to make it easy for clients to use the reader-writer lock model.
 	/// @tparam T Type for your object which is to be "enveloped"
-	template <typename T>
-		requires std::copy_constructible<T>
+	template <typename ContainerType>
+		requires std::copy_constructible<ContainerType>
 	class RWLEnvelope
 	{
 		using RWLock = std::unique_lock<std::shared_mutex>;
@@ -105,7 +106,7 @@ namespace siddiqsoft
 	public:
 		/// @brief Default constructor. Use the reassign() method to initialize the underlying storage later.
 		explicit RWLEnvelope()
-			: _item(T {})
+			: _item(ContainerType {})
 		{
 		}
 
@@ -114,7 +115,7 @@ namespace siddiqsoft
 		/// NOTE: The underlying mutex are *not* shared/moved!
 		/// The new object gets it own mutex whereas the source retains its mutex.
 		/// @param src The source is the other envelope of the same type
-		explicit RWLEnvelope(RWLEnvelope<T>&& src) noexcept
+		explicit RWLEnvelope(RWLEnvelope<ContainerType>&& src) noexcept
 		{
 			try
 			{
@@ -139,7 +140,7 @@ namespace siddiqsoft
 
 		/// @brief Move constructor
 		/// @param src source/contained object
-		explicit RWLEnvelope(T&& src)
+		explicit RWLEnvelope(ContainerType&& src)
 		{
 			// Delegate to the underlying item type move assignment operator
 			_item = std::move(src);
@@ -148,7 +149,7 @@ namespace siddiqsoft
 
 		/// @brief Move assignment replace previous value
 		/// @param src New source/contained object; the src will be reset/null'd
-		void reassign(T&& src)
+		void reassign(ContainerType&& src)
 		{
 			RWLock myWriterLock(_sMutex);
 			// Delegate to the underlying item type move assignment operator
@@ -158,7 +159,7 @@ namespace siddiqsoft
 
 		/// @brief Non-move constructor is not allowed
 		/// @param source
-		explicit RWLEnvelope(const T& arg)
+		explicit RWLEnvelope(const ContainerType& arg)
 		{
 			RWLock myWriterLock(_sMutex);
 			_item = arg;
@@ -179,7 +180,7 @@ namespace siddiqsoft
 		/// @return Returns (forwards) the return from the callback
 		/// @note The callback MUST be marked noexcept. Callbacks that may throw will not compile.
 		template <typename Callback, typename... Args>
-			requires ObserveCallbackNoexcept<T, Callback, Args...>
+			requires ObserveCallbackNoexcept<ContainerType, Callback, Args...>
 		auto observe(Callback cbf, Args&&... args) const
 		{
 			RLock myLock(_sMutex);
@@ -192,10 +193,12 @@ namespace siddiqsoft
 		/// @tparam Args Additional argument types
 		/// @param cbf The callback function that may modify the contents (must be noexcept)
 		/// @param args Additional arguments to pass to the callback
-		/// @return Returns (forwards) the return from the callback
+		/// @return Returns (forwards) the return from the callback; May not have any return.
 		/// @note The callback MUST be marked noexcept. Callbacks that may throw will not compile.
+		///       We ignore any exceptions. Most cases of issues will be caught by the compiler during
+		///       testing code.
 		template <typename Callback, typename... Args>
-			requires MutateCallbackNoexcept<T, Callback, Args...>
+			requires MutateCallbackNoexcept<ContainerType, Callback, Args...>
 		auto mutate(Callback cbf, Args&&... args)
 		{
 			RWLock myWriterLock(_sMutex);
@@ -213,7 +216,7 @@ namespace siddiqsoft
 
 		/// @brief Returns a copy of the underlying object
 		/// @return Copy of the underlying object (must have copy-constructor)
-		[[nodiscard]] T snapshot() const
+		[[nodiscard]] ContainerType snapshot() const
 		{
 			RLock myLock(_sMutex);
 			return _item;
@@ -224,14 +227,14 @@ namespace siddiqsoft
 		///        The client MUST use this inside a statement block and excercise utmost care! Avoid using IO within the lock!
 		///        Example: if (auto [o, rl] = var.readerLock(); rl) { .. }
 		/// @return tuple of const T& and the readerlock.
-		[[nodiscard]] std::tuple<const T&, RLock> readLock() { return {std::ref(_item), RLock(_sMutex)}; }
+		[[nodiscard]] std::tuple<const ContainerType&, RLock> readLock() { return {std::ref(_item), RLock(_sMutex)}; }
 
 
 		/// @brief Acquires a writerlock and returns the lock along with the reference to the item for the client to play with within lock.
 		///        The client MUST use this inside a statement block and excercise utmost care! Avoid using IO within the lock!
 		///        Example: if (auto [o, rwl] = var.writerLock(); rwl) { .. }
 		/// @return tuple of T& and writer lock.
-		[[nodiscard]] std::tuple<T&, RWLock> writeLock() { return {std::ref(_item), RWLock(_sMutex)}; }
+		[[nodiscard]] std::tuple<ContainerType&, RWLock> writeLock() { return {std::ref(_item), RWLock(_sMutex)}; }
 
 
 #ifdef INCLUDE_NLOHMANN_JSON_HPP_
@@ -248,7 +251,7 @@ namespace siddiqsoft
 	private:
 		/// @brief The underlying type
 		/// Avoid initializing (not all types may have default constructor)
-		T _item;
+		ContainerType _item;
 
 		/// @brief The mutex against which we use reader/writer lock
 		mutable std::shared_mutex _sMutex {};

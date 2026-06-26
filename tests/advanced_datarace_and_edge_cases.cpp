@@ -460,7 +460,7 @@ TEST(advanced_edge, CallbackWithReferenceArguments)
 // Stress: Maximum contention with all operations mixed
 TEST(advanced_stress, MaximumContentionMixedOps)
 {
-	siddiqsoft::RWLEnvelope<nlohmann::json> envelope(nlohmann::json({{"counter", 0}}));
+	siddiqsoft::RWLEnvelope<nlohmann::json> envelope({{"counter", 0}});
 
 	const uint32_t            ITERATIONS   = 5000;
 	const uint32_t            THREAD_COUNT = 20;
@@ -965,6 +965,7 @@ struct CustomData
 		, name("")
 	{
 	}
+	
 	CustomData(int v, const std::string& n)
 		: value(v)
 		, name(n)

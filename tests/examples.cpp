@@ -4,7 +4,7 @@
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/RWLEnvelope.hpp"
 
-
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 TEST(examples, WithCallbacks)
 {
 	siddiqsoft::RWLEnvelope<nlohmann::json> docl({{"foo", "bar"}, {"few", "lar"}});
@@ -117,3 +117,4 @@ TEST(examples, CallbacksWithGlobalArgs)
 	// The local internal should be 0..
 	EXPECT_EQ(0, localValue2nd);
 }
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
