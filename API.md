@@ -111,12 +111,12 @@ Performs a read-only operation on the enclosed object using a shared (reader) lo
 siddiqsoft::RWLEnvelope<std::map<std::string, int>> data;
 
 // Read without copying
-bool found = data.observe<bool>([](const auto& map) {
+bool found = data.observe<>([](const auto& map) {
     return map.find("key") != map.end();
 });
 
 // Get a value
-int value = data.observe<int>([](const auto& map) {
+int value = data.observe<>([](const auto& map) {
     return map.at("key");
 });
 ```
@@ -146,12 +146,12 @@ Performs a read-write operation on the enclosed object using an exclusive (write
 siddiqsoft::RWLEnvelope<std::map<std::string, int>> data;
 
 // Modify the map
-data.mutate<void>([](auto& map) {
+data.mutate<>([](auto& map) {
     map["key"] = 42;
 });
 
 // Modify and return a value
-int newSize = data.mutate<int>([](auto& map) {
+int newSize = data.mutate<>([](auto& map) {
     map["another"] = 100;
     return map.size();
 });
@@ -310,12 +310,12 @@ Use `observe()` and `mutate()` for focused, callback-based access:
 siddiqsoft::RWLEnvelope<std::map<std::string, int>> cache;
 
 // Read operation
-bool exists = cache.observe<bool>([](const auto& m) {
+bool exists = cache.observe<>([](const auto& m) {
     return m.count("key") > 0;
 });
 
 // Write operation
-cache.mutate<void>([](auto& m) {
+cache.mutate<>([](auto& m) {
     m["key"] = 42;
 });
 ```
@@ -394,12 +394,12 @@ RWLMap config;
 config.reassign(std::move(initialConfig));
 
 // Multiple threads can read concurrently
-config.observe<void>([](const auto& m) {
+config.observe<>([](const auto& m) {
     std::cout << m.at("setting") << std::endl;
 });
 
 // Single thread can write exclusively
-config.mutate<void>([](auto& m) {
+config.mutate<>([](auto& m) {
     m["setting"] = "new_value";
 });
 ```
@@ -416,12 +416,12 @@ siddiqsoft::RWLEnvelope<nlohmann::json> document;
 document.reassign(nlohmann::json::parse(jsonString));
 
 // Read fields
-std::string name = document.observe<std::string>([](const auto& doc) {
+std::string name = document.observe<>([](const auto& doc) {
     return doc.value("name", "unknown");
 });
 
 // Update fields
-document.mutate<void>([](auto& doc) {
+document.mutate<>([](auto& doc) {
     doc["lastModified"] = nlohmann::json::object({
         {"timestamp", std::time(nullptr)},
         {"user", "admin"}
@@ -467,13 +467,13 @@ int main() {
     scores.reassign(std::move(initial));
     
     // Read operation using callback
-    int aliceScore = scores.observe<int>([](const auto& m) {
+    int aliceScore = scores.observe<>([](const auto& m) {
         return m.at("Alice");
     });
     std::cout << "Alice's score: " << aliceScore << std::endl;
     
     // Write operation using callback
-    scores.mutate<void>([](auto& m) {
+    scores.mutate<>([](auto& m) {
         m["Charlie"] = 92;
     });
     

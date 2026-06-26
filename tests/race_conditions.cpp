@@ -66,7 +66,7 @@ TEST(race_critical, WriterWriterRaceCondition)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>(
+						envelope.mutate<>(
 								[](auto& doc)
 								{
 									auto cur       = doc.value("counter", 0);
@@ -80,7 +80,7 @@ TEST(race_critical, WriterWriterRaceCondition)
 	startSignal.notify_all();
 	threads.clear();
 
-	int finalCounter = envelope.observe<int>([](const auto& doc) { return doc.value("counter", -1); });
+	int finalCounter = envelope.observe<>([](const auto& doc) { return doc.value("counter", -1); });
 	int expected     = static_cast<int>(WRITER_COUNT * ITERATIONS);
 
 	EXPECT_EQ(expected, finalCounter) << "Lost updates detected: expected " << expected << " but got " << finalCounter;
@@ -119,7 +119,7 @@ TEST(race_critical, ReassignMutateRace)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>(
+						envelope.mutate<>(
 								[](auto& doc)
 								{
 									// Just verify we can access and modify
@@ -213,10 +213,10 @@ TEST(race_critical, NoDeadlockUnderStress)
 												   switch (threadId % 5)
 												   {
 												   case 0: // mutate
-													   envelope.mutate<void>([](auto& doc) { doc["x"] = doc.value("x", 0) + 1; });
+													   envelope.mutate<>([](auto& doc) { doc["x"] = doc.value("x", 0) + 1; });
 													   break;
 												   case 1: // observe
-													   envelope.observe<int>([](const auto& doc) { return doc.value("x", 0); });
+													   envelope.observe<>([](const auto& doc) { return doc.value("x", 0); });
 													   break;
 												   case 2: // readLock
 													   if (auto [doc, rl] = envelope.readLock(); rl) { (void)doc.value("x", 0); }
@@ -278,7 +278,7 @@ TEST(race_high, ExceptionSafetyUnderContention)
 											   {
 												   try
 												   {
-													   envelope.mutate<void>(
+													   envelope.mutate<>(
 															   [j](auto& doc)
 															   {
 																   if (j % 10 == 0) { throw std::runtime_error("intentional"); }
@@ -304,7 +304,7 @@ TEST(race_high, ExceptionSafetyUnderContention)
 					{
 						try
 						{
-							envelope.observe<int>([](const auto& doc) { return doc.value("value", 0); });
+							envelope.observe<>([](const auto& doc) { return doc.value("value", 0); });
 						}
 						catch (...)
 						{
@@ -322,7 +322,7 @@ TEST(race_high, ExceptionSafetyUnderContention)
 	EXPECT_GT(exceptionCount.load(), 0) << "Expected some exceptions to be thrown";
 
 	// Verify envelope is still usable
-	int finalValue = envelope.observe<int>([](const auto& doc) { return doc.value("value", 0); });
+	int finalValue = envelope.observe<>([](const auto& doc) { return doc.value("value", 0); });
 	EXPECT_GE(finalValue, 0) << "Envelope in invalid state after exceptions";
 }
 
@@ -349,7 +349,7 @@ TEST(race_high, WriteLockMutateEquivalence)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>(
+						envelope.mutate<>(
 								[&](auto& doc)
 								{
 									auto cur       = doc.value("counter", 0);
@@ -383,7 +383,7 @@ TEST(race_high, WriteLockMutateEquivalence)
 	startSignal.notify_all();
 	threads.clear();
 
-	int finalCounter = envelope.observe<int>([](const auto& doc) { return doc.value("counter", -1); });
+	int finalCounter = envelope.observe<>([](const auto& doc) { return doc.value("counter", -1); });
 	int expected     = static_cast<int>(mutateWrites.load() + writeLockWrites.load());
 
 	EXPECT_EQ(expected, finalCounter) << "WriteLock and Mutate have different locking semantics";
@@ -411,7 +411,7 @@ TEST(race_high, ReadLockObserveEquivalence)
 				startSignal.wait(0);
 				for (uint32_t j = 0; j < ITERATIONS; j++)
 				{
-					envelope.mutate<void>([](auto& doc) { doc["counter"] = doc.value("counter", 0) + 1; });
+					envelope.mutate<>([](auto& doc) { doc["counter"] = doc.value("counter", 0) + 1; });
 				}
 			});
 
@@ -424,7 +424,7 @@ TEST(race_high, ReadLockObserveEquivalence)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						int val = envelope.observe<int>([](const auto& doc) { return doc.value("counter", 0); });
+						int val = envelope.observe<>([](const auto& doc) { return doc.value("counter", 0); });
 						if (val >= 0) observeReads.fetch_add(1, std::memory_order_relaxed);
 					}
 				});
@@ -456,7 +456,7 @@ TEST(race_high, ReadLockObserveEquivalence)
 	EXPECT_GT(readLockReads.load(), 0) << "No readLock() reads occurred";
 
 	// Both should see valid counter values
-	int finalCounter = envelope.observe<int>([](const auto& doc) { return doc.value("counter", -1); });
+	int finalCounter = envelope.observe<>([](const auto& doc) { return doc.value("counter", -1); });
 	EXPECT_EQ(ITERATIONS, finalCounter) << "Final counter doesn't match expected writes";
 }
 
@@ -533,7 +533,7 @@ TEST(race_medium, RwaCounterWithExceptions)
 					{
 						try
 						{
-							envelope.mutate<void>(
+							envelope.mutate<>(
 									[&, j](auto& doc)
 									{
 										doc["x"] = doc.value("x", 0) + 1;
@@ -585,7 +585,7 @@ TEST(race_low, LongLockDurationStress)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>(
+						envelope.mutate<>(
 								[threadId, j](auto& doc)
 								{
 									// Simulate variable work duration
@@ -606,7 +606,7 @@ TEST(race_low, LongLockDurationStress)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						int val = envelope.observe<int>(
+						int val = envelope.observe<>(
 								[threadId, j](const auto& doc)
 								{
 									// Simulate variable work duration
@@ -625,7 +625,7 @@ TEST(race_low, LongLockDurationStress)
 
 	EXPECT_FALSE(failure.load()) << "Failure detected under variable lock durations";
 
-	int finalCounter = envelope.observe<int>([](const auto& doc) { return doc.value("counter", -1); });
+	int finalCounter = envelope.observe<>([](const auto& doc) { return doc.value("counter", -1); });
 	int expected     = static_cast<int>((THREAD_COUNT / 2) * ITERATIONS);
 	EXPECT_EQ(expected, finalCounter) << "Counter mismatch under variable lock durations";
 }
@@ -648,7 +648,7 @@ TEST(race_low, MemoryVisibilityAcrossThreads)
 				startSignal.wait(0);
 				for (uint32_t j = 0; j < ITERATIONS; j++)
 				{
-					envelope.mutate<void>(
+					envelope.mutate<>(
 							[j](auto& doc)
 							{
 								doc["a"] = static_cast<int>(j);
@@ -716,7 +716,7 @@ TEST(race_low, ConcurrentMoveConstructor)
 							envelope         = std::move(newEnvelope);
 
 							// Verify we can still use it after move
-							auto val = envelope->observe<uint32_t>([](const auto& doc) { return doc.value("value", 0); });
+							auto val = envelope->observe<>([](const auto& doc) { return doc.value("value", 0); });
 							if (val != static_cast<uint32_t>(threadId)) { failure.store(true); }
 						}
 						catch (const std::exception&)

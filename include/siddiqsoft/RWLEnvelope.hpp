@@ -145,13 +145,12 @@ namespace siddiqsoft
 
 
 		/// @brief Perform a read-only action where the object is not "written" to and the read operations are shared amongst other reader threads
-		/// @tparam R The type of the return from the callback
-		/// @param callback The callback may not modify the contents and gets a readonly lock access to the stored data
+		/// @tparam Callback The callback must accept the T& as the first argument along with any addition arguments
 		/// @return Returns (forwards) the return from the callback
-		template <typename R = void> R observe(std::function<R(const T&)> callback) const
+		template <typename Callback, typename... Args> auto observe(Callback cbf, Args&&... args) const
 		{
 			RLock myLock(_sMutex);
-			return callback(_item);
+			return cbf(_item, std::forward<Args>(args)...);
 		}
 
 
@@ -159,11 +158,11 @@ namespace siddiqsoft
 		/// @tparam R The type of the return from the callback
 		/// @param callback The callback may modify the contents and gets a readwrite lock access to the stored data
 		/// @return Returns (forwards) the return from the callback
-		template <typename R = void> R mutate(std::function<R(T&)> callback)
+		template <typename Callback, typename... Args> auto mutate(Callback cbf, Args&&... args)
 		{
 			RWLock myWriterLock(_sMutex);
 			rone   d(_rwa); // we increment the housekeeping counter on each callback
-			return callback(_item);
+			return cbf(_item, std::forward<Args>(args)...);
 		}
 
 
