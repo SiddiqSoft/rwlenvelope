@@ -77,7 +77,9 @@ namespace siddiqsoft
 
 	/// @brief Implements a simple envelope-access model to make it easy for clients to use the reader-writer lock model.
 	/// @tparam T Type for your object which is to be "enveloped"
-	template <typename T> class RWLEnvelope
+	template <typename T>
+		requires std::copy_constructible<T>
+	class RWLEnvelope
 	{
 		using RWLock = std::unique_lock<std::shared_mutex>;
 		using RLock  = std::shared_lock<std::shared_mutex>;
@@ -156,7 +158,11 @@ namespace siddiqsoft
 
 		/// @brief Non-move constructor is not allowed
 		/// @param source
-		explicit RWLEnvelope(const T&) = delete;
+		explicit RWLEnvelope(const T& arg)
+		{
+			RWLock myWriterLock(_sMutex);
+			_item = arg;
+		}
 
 
 		/// @brief Non-move assignment is not allowed
@@ -174,7 +180,7 @@ namespace siddiqsoft
 		/// @note The callback MUST be marked noexcept. Callbacks that may throw will not compile.
 		template <typename Callback, typename... Args>
 			requires ObserveCallbackNoexcept<T, Callback, Args...>
-		auto observe(Callback cbf, Args&&... args) const 
+		auto observe(Callback cbf, Args&&... args) const
 		{
 			RLock myLock(_sMutex);
 			return cbf(_item, std::forward<Args>(args)...);
@@ -190,11 +196,11 @@ namespace siddiqsoft
 		/// @note The callback MUST be marked noexcept. Callbacks that may throw will not compile.
 		template <typename Callback, typename... Args>
 			requires MutateCallbackNoexcept<T, Callback, Args...>
-		auto mutate(Callback cbf, Args&&... args) 
+		auto mutate(Callback cbf, Args&&... args)
 		{
 			RWLock myWriterLock(_sMutex);
 			rone   d(_rwa); // we increment the housekeeping counter on each callback
-			
+
 			try
 			{
 				return cbf(_item, std::forward<Args>(args)...);

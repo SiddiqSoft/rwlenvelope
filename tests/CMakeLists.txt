@@ -66,6 +66,7 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
                     PRIVATE
                     ${PROJECT_SOURCE_DIR}/tests/test.cpp
                     ${PROJECT_SOURCE_DIR}/tests/race_conditions.cpp
+                    ${PROJECT_SOURCE_DIR}/tests/advanced_datarace_and_edge_cases.cpp
                     ${PROJECT_SOURCE_DIR}/tests/observe_mutate_api_tests.cpp
                     ${PROJECT_SOURCE_DIR}/tests/examples.cpp)
     # Link dependencies..
