@@ -30,11 +30,11 @@ RWLEnvelope : A simple read-writer lock envelope
 
 ### The Problem with Manual Lock Management
 
-Writing thread-safe code is hard. Without RWLEnvelope, you'd need to:
+Writing thread-safe code is tedious. Without RWLEnvelope, you'd need to:
 
 ```cpp
-// Without RWLEnvelope - verbose and error-prone
-std::shared_mutex mutex;
+// Without RWLEnvelope - verbose
+std::shared_mutex          mutex;
 std::map<std::string, int> data;
 
 // Reading
@@ -55,7 +55,7 @@ std::map<std::string, int> data;
 
 ### The RWLEnvelope Solution
 
-With RWLEnvelope, the same code becomes cleaner and safer:
+With RWLEnvelope, the same code becomes cleaner:
 
 ```cpp
 // With RWLEnvelope - clean and safe
@@ -100,22 +100,26 @@ data.mutate([](auto& m) noexcept {
 siddiqsoft::RWLEnvelope<AppConfig> config;
 
 // Multiple threads reading config
-config.observe([](const auto& cfg) noexcept {
+auto myDatabaseUrl = config.observe([](const auto& cfg) noexcept {
+    // GET - returns a copy of the value.
     return cfg.getDatabaseUrl();
 });
 
 // Single thread updating config
-config.mutate([](auto& cfg) noexcept {
-    cfg.setDatabaseUrl("new_url");
-});
+config.mutate([](auto& cfg, std::string& newURL) noexcept {
+    cfg.setDatabaseUrl(newURL);
+    },
+    "new_url");
 ```
+
+Note we could have used lambda captures but it is preferred to use extra arguments into the callback to resolve r-value and forward parameters into the underlying object.
 
 **Cache Implementation**:
 ```cpp
 siddiqsoft::RWLEnvelope<std::unordered_map<std::string, CacheEntry>> cache;
 
 // Fast concurrent reads
-cache.observe([](const auto& c) noexcept {
+auto val = cache.observe([](const auto& c) noexcept {
     return c.at("key");
 });
 
@@ -125,20 +129,30 @@ cache.mutate([](auto& c) noexcept {
 });
 ```
 
+The motivation is to allow this helper class to handle the locking and contain your in-lock logic restricted to the *ideally small/short* code within the lambda (or callable).
+
 **Shared State in Services**:
 ```cpp
 siddiqsoft::RWLEnvelope<ServiceState> state;
 
 // Multiple reader threads
-state.observe([](const auto& s) noexcept {
+auto healthCheck = state.observe([](const auto& s) noexcept {
     return s.isHealthy();
 });
 
 // Single writer thread
-state.mutate([](auto& s) noexcept {
-    s.updateMetrics();
-});
+// Passing the myMetrics as argument to the callback
+state.mutate([](auto& s, std::map<std::string,std::string>& metrics) noexcept {
+    s.updateMetrics( metrics );
+    },
+    myMetrics);
+
+// And if we're using lambda capture...
+state.mutate([&myMetrics](auto& s) noexcept {
+    s.updateMetrics( myMetrics );
+    });
 ```
+
 
 # API Documentation
 
@@ -147,13 +161,12 @@ For comprehensive API documentation, including detailed descriptions of all meth
 # Requirements
 - You must be able to use [`<shared_mutex>`](https://en.cppreference.com/w/cpp/thread/shared_mutex) and [`<mutex>`](https://en.cppreference.com/w/cpp/thread/mutex).
 - Minimal target is `C++20` (requires C++20 concepts support).
-- The build and tests are for Visual Studio 2019 under x64.
+- The build and tests are for MacOS (arm64), Linux (Clang, GCC) and Visual Studio 2019 under arm64 and x64. 
 - We use [`nlohmann::json`](https://github.com/nlohmann/json) only in our tests and the library is aware to provide a conversion operator if library is detected.
 
 # Usage
 
 - Use the nuget [SiddiqSoft.RWLEnvelope](https://www.nuget.org/packages/SiddiqSoft.RWLEnvelope/)
-- Copy paste..whatever works.
 - The idea is to not "wrap" the underlying type forcing you to either inherit or re-implement the types but to take advantage of the underlying type's interface whilst ensuring that we have the necessary locks.
 - Two methods:
   - Observer/mutator model with callback and custom return to limit access and to focus the where and how to access the underlying type.
@@ -207,6 +220,7 @@ TEST(examples, AssignWithDirectLocks)
 ```
 
 Additional [examples](tests/examples.cpp).
+
 <details>
 <summary>
 
@@ -267,6 +281,6 @@ ctest --preset Apple-Debug
 
 <small align="right">
 
-&copy; 2021 Siddiq Software LLC. All rights reserved.
+&copy; 2021 Abdulkareem Siddiq. All rights reserved.
 
 </small>
