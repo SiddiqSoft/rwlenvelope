@@ -30,11 +30,11 @@ RWLEnvelope : A simple read-writer lock envelope
 
 ### The Problem with Manual Lock Management
 
-Writing thread-safe code is hard. Without RWLEnvelope, you'd need to:
+Writing thread-safe code is tedious. Without RWLEnvelope, you'd need to:
 
 ```cpp
-// Without RWLEnvelope - verbose and error-prone
-std::shared_mutex mutex;
+// Without RWLEnvelope - verbose
+std::shared_mutex          mutex;
 std::map<std::string, int> data;
 
 // Reading
@@ -55,14 +55,14 @@ std::map<std::string, int> data;
 
 ### The RWLEnvelope Solution
 
-With RWLEnvelope, the same code becomes cleaner and safer:
+With RWLEnvelope, the same code becomes cleaner:
 
 ```cpp
 // With RWLEnvelope - clean and safe
 siddiqsoft::RWLEnvelope<std::map<std::string, int>> data;
 
 // Reading
-data.observe<void>([](const auto& m) {
+data.observe([](const auto& m) noexcept {
     auto it = m.find("key");
     if (it != m.end()) {
         std::cout << it->second << std::endl;
@@ -70,7 +70,7 @@ data.observe<void>([](const auto& m) {
 });
 
 // Writing
-data.mutate<void>([](auto& m) {
+data.mutate([](auto& m) noexcept {
     m["key"] = 42;
 });
 ```
@@ -100,45 +100,59 @@ data.mutate<void>([](auto& m) {
 siddiqsoft::RWLEnvelope<AppConfig> config;
 
 // Multiple threads reading config
-config.observe<std::string>([](const auto& cfg) {
+auto myDatabaseUrl = config.observe([](const auto& cfg) noexcept {
+    // GET - returns a copy of the value.
     return cfg.getDatabaseUrl();
 });
 
 // Single thread updating config
-config.mutate<void>([](auto& cfg) {
-    cfg.setDatabaseUrl("new_url");
-});
+config.mutate([](auto& cfg, std::string& newURL) noexcept {
+    cfg.setDatabaseUrl(newURL);
+    },
+    "new_url");
 ```
+
+Note we could have used lambda captures but it is preferred to use extra arguments into the callback to resolve r-value and forward parameters into the underlying object.
 
 **Cache Implementation**:
 ```cpp
 siddiqsoft::RWLEnvelope<std::unordered_map<std::string, CacheEntry>> cache;
 
 // Fast concurrent reads
-cache.observe<CacheEntry>([](const auto& c) {
+auto val = cache.observe([](const auto& c) noexcept {
     return c.at("key");
 });
 
 // Exclusive writes
-cache.mutate<void>([](auto& c) {
+cache.mutate([](auto& c) noexcept {
     c["key"] = computeValue();
 });
 ```
+
+The motivation is to allow this helper class to handle the locking and contain your in-lock logic restricted to the *ideally small/short* code within the lambda (or callable).
 
 **Shared State in Services**:
 ```cpp
 siddiqsoft::RWLEnvelope<ServiceState> state;
 
 // Multiple reader threads
-state.observe<bool>([](const auto& s) {
+auto healthCheck = state.observe([](const auto& s) noexcept {
     return s.isHealthy();
 });
 
 // Single writer thread
-state.mutate<void>([](auto& s) {
-    s.updateMetrics();
-});
+// Passing the myMetrics as argument to the callback
+state.mutate([](auto& s, std::map<std::string,std::string>& metrics) noexcept {
+    s.updateMetrics( metrics );
+    },
+    myMetrics);
+
+// And if we're using lambda capture...
+state.mutate([&myMetrics](auto& s) noexcept {
+    s.updateMetrics( myMetrics );
+    });
 ```
+
 
 # API Documentation
 
@@ -146,14 +160,13 @@ For comprehensive API documentation, including detailed descriptions of all meth
 
 # Requirements
 - You must be able to use [`<shared_mutex>`](https://en.cppreference.com/w/cpp/thread/shared_mutex) and [`<mutex>`](https://en.cppreference.com/w/cpp/thread/mutex).
-- Minimal target is `C++17`.
-- The build and tests are for Visual Studio 2019 under x64.
+- Minimal target is `C++20` (requires C++20 concepts support).
+- The build and tests are for MacOS (arm64), Linux (Clang, GCC) and Visual Studio 2019 under arm64 and x64. 
 - We use [`nlohmann::json`](https://github.com/nlohmann/json) only in our tests and the library is aware to provide a conversion operator if library is detected.
 
 # Usage
 
 - Use the nuget [SiddiqSoft.RWLEnvelope](https://www.nuget.org/packages/SiddiqSoft.RWLEnvelope/)
-- Copy paste..whatever works.
 - The idea is to not "wrap" the underlying type forcing you to either inherit or re-implement the types but to take advantage of the underlying type's interface whilst ensuring that we have the necessary locks.
 - Two methods:
   - Observer/mutator model with callback and custom return to limit access and to focus the where and how to access the underlying type.
@@ -179,11 +192,11 @@ TEST(examples, AssignWithCallbacks)
 	EXPECT_TRUE(doc2.empty());
 
 	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
-	EXPECT_TRUE(docl.observe<bool>([](const auto& doc) -> bool {
+	EXPECT_TRUE(docl.observe([](const auto& doc) noexcept {
 		return (doc.value("fee", 0xfa17) == 0x0fee) && (doc.value("baa", 0xfa17) == 0x0baa) && (doc.value("bee", 0xfa17) == 0x0bee);
 	}));
 
-	EXPECT_EQ(3, docl.observe<size_t>([](const auto& doc) { return doc.size(); }));
+	EXPECT_EQ(3, docl.observe([](const auto& doc) noexcept { return doc.size(); }));
 }
 
 
@@ -208,9 +221,13 @@ TEST(examples, AssignWithDirectLocks)
 
 Additional [examples](tests/examples.cpp).
 
+<details>
+<summary>
+
 # Test Coverage
 
-The library includes comprehensive test coverage across multiple categories:
+</summary>
+The library includes comprehensive test coverage with **38 comprehensive tests** across multiple categories:
 
 ## Basic Functionality Tests
 
@@ -251,21 +268,6 @@ The library includes comprehensive test coverage across multiple categories:
 - **Paired Field Consistency**: Ensuring related fields remain synchronized
 - **Version-Data Pairing**: Validating version and data fields stay in sync during reassignment
 
-## Test Statistics
-
-- **Total Test Cases**: 20+ comprehensive test cases
-- **Concurrency Levels**: Tests with up to 16 concurrent reader threads and 8 writer threads
-- **Iteration Counts**: Stress tests with 5,000-10,000 iterations per thread
-- **Coverage Areas**:
-  - ✅ All public API methods
-  - ✅ Thread safety guarantees
-  - ✅ Lock semantics (shared vs. exclusive)
-  - ✅ Exception safety
-  - ✅ Move semantics
-  - ✅ Data consistency under contention
-  - ✅ Return value forwarding
-  - ✅ JSON serialization (when available)
-
 ## Running Tests
 
 Tests are built using Google Test (gtest) and can be run via the CMake build system:
@@ -275,91 +277,10 @@ cmake --preset Apple-Debug
 cmake --build --preset Apple-Debug
 ctest --preset Apple-Debug
 ```
-
-Coverage reports are generated and tracked via Azure Pipelines CI/CD.
-
-For detailed test results and analysis, see [**TEST_RESULTS.md**](TEST_RESULTS.md).
-
-# Test Quality & Reliability
-
-## Comprehensive Test Suite
-
-We take testing seriously. The library includes **38 comprehensive tests** covering:
-
-- ✅ **4 Example tests** - Real-world usage patterns
-- ✅ **4 Critical race condition tests** - Writer-writer contention, deadlock prevention, reassign-mutate racing
-- ✅ **3 High-priority race condition tests** - Exception safety, API equivalence verification
-- ✅ **2 Medium-priority race condition tests** - Snapshot isolation, RWA counter accuracy
-- ✅ **3 Low-priority race condition tests** - Memory visibility, variable lock durations
-- ✅ **4 Basic concurrency tests** - Multi-threaded reader-writer scenarios
-- ✅ **10 Edge case tests** - Exception handling, move semantics, type flexibility
-- ✅ **8 Stress tests** - High-contention scenarios with 5,000-10,000 iterations
-
-## Test Execution
-
-All 38 tests pass successfully in ~7.6 seconds:
-- **Zero failures** - 100% pass rate
-- **No race conditions detected** - Verified with up to 16 concurrent threads
-- **Exception safe** - Callbacks throwing exceptions don't corrupt state
-- **Deadlock-free** - Explicit timeout-based deadlock detection
-- **Memory safe** - All writes visible to readers, no torn reads
-
-## Stress Testing
-
-The test suite includes aggressive stress tests:
-- **Maximum contention**: All threads hammer the lock without delays
-- **Mixed API usage**: All 5 API methods used concurrently
-- **Variable lock durations**: Realistic lock hold times
-- **Concurrent exceptions**: Exception safety under contention
-- **Rapid reassignments**: Multiple threads reassigning simultaneously
-
-# Feedback & Contributions
-
-## Report Issues or Suggest Improvements
-
-We want to hear about your usage scenarios! If you encounter:
-
-- **Edge cases** not covered by our tests
-- **Performance issues** in your specific use case
-- **Compatibility problems** with your type or compiler
-- **Feature requests** for additional functionality
-- **Documentation gaps** or unclear explanations
-
-**Please open an issue** on [GitHub](https://github.com/SiddiqSoft/RWLEnvelope/issues) with:
-
-1. **Your use case**: How are you using RWLEnvelope?
-2. **The scenario**: What specific situation triggered the issue?
-3. **Expected behavior**: What should happen?
-4. **Actual behavior**: What actually happened?
-5. **Reproduction steps**: How can we reproduce it?
-6. **Environment**: Compiler, OS, C++ version
-
-## Help Us Improve
-
-Your feedback helps us:
-- Identify edge cases we haven't tested
-- Optimize for real-world usage patterns
-- Improve documentation and examples
-- Ensure the library works reliably in your scenarios
-
-Even if you don't have issues, we'd love to hear about:
-- How you're using RWLEnvelope
-- Performance characteristics in your application
-- Types you're enveloping
-- Patterns that work well for you
-
-## Contributing
-
-Contributions are welcome! Whether it's:
-- Additional test cases for your scenarios
-- Performance optimizations
-- Documentation improvements
-- Bug fixes
-
-Please submit a pull request or open an issue to discuss your ideas.
+</details>
 
 <small align="right">
 
-&copy; 2021 Siddiq Software LLC. All rights reserved.
+&copy; 2021 Abdulkareem Siddiq. All rights reserved.
 
 </small>

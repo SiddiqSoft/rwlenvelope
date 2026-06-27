@@ -37,6 +37,7 @@
 
 // We need this to pull in the thread id
 #include <cstddef>
+#include <cstdint>
 #include <sstream>
 #if defined(WIN32)
 #define _WIN32_WINNT 0x0A00
@@ -68,6 +69,7 @@
 #error "tests: Must have format C++20"
 #endif
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 TEST(tests, Simple)
 {
@@ -75,7 +77,7 @@ TEST(tests, Simple)
 	{
 		siddiqsoft::RWLEnvelope<nlohmann::json> myContainer;
 
-		myContainer.mutate<void>([](const auto& o) { EXPECT_EQ(0, o.size()); });
+		myContainer.mutate([](const auto& o) noexcept { EXPECT_EQ(0, o.size()); });
 	}
 	catch (...)
 	{
@@ -110,7 +112,7 @@ TEST(tests, TwoThreads)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < READ_LIMIT; j++)
 					{
-						myContainer.observe<void>([&](auto const& o) { readCounter++; });
+						myContainer.observe([&](auto const& o) noexcept { readCounter++; });
 						std::this_thread::sleep_for(std::chrono::nanoseconds(dist(rng)));
 					}
 					readerFinished++;
@@ -126,7 +128,7 @@ TEST(tests, TwoThreads)
 					thread_local std::mt19937               rng {std::random_device {}()};
 					std::uniform_int_distribution<uint32_t> dist(0, WRITE_LIMIT - 1);
 #if defined(WIN32)
-					unsigned tid = GetCurrentThreadId();
+					std::string tid = std::format("{}", GetCurrentThreadId());
 #else
 					std::stringstream ss {};
 					ss << std::this_thread::get_id();
@@ -135,13 +137,16 @@ TEST(tests, TwoThreads)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < WRITE_LIMIT; j++)
 					{
-						myContainer.mutate<void>(
-								[&writeCounter, tid, j](auto& o)
+						myContainer.mutate(
+								[](auto& o, std::atomic_uint32_t& wc, std::string& tid, uint32_t& j) noexcept
 								{
 									o["lastThreadId"] = tid;
 									o["j"]            = j;
-									o["writeCount"]   = ++writeCounter;
-								});
+									o["writeCount"]   = ++wc;
+								},
+								writeCounter,
+								tid,
+								j);
 						std::this_thread::sleep_for(std::chrono::nanoseconds(dist(rng)));
 					}
 					writerFinished++;
@@ -156,7 +161,7 @@ TEST(tests, TwoThreads)
 	// Join all threads (jthread destructor requests stop and joins)
 	readerPool.clear();
 
-	myContainer.observe<void>([&](auto const& o) { std::cerr << std::format("{} - {}\n", __func__, o.dump()) << std::endl; });
+	myContainer.observe([&](auto const& o) noexcept { std::cerr << std::format("{} - {}\n", __func__, o.dump()) << std::endl; });
 	std::cerr << std::format("{} - {}\n", __func__, myContainer.snapshot().dump()) << std::endl;
 
 	EXPECT_EQ(WRITE_LIMIT / 10, writerFinished.load()) << myContainer.snapshot().dump();
@@ -239,7 +244,7 @@ TEST(tests, TwoThreadsBare)
 	// Join all threads (jthread destructor requests stop and joins)
 	readerPool.clear();
 
-	myContainer.observe<void>([&](auto const& o) { std::cerr << std::format("{} - {}\n", __func__, o.dump()) << std::endl; });
+	myContainer.observe([&](auto const& o) noexcept { std::cerr << std::format("{} - {}\n", __func__, o.dump()) << std::endl; });
 	std::cerr << std::format("{} - {}\n", __func__, myContainer.snapshot().dump()) << std::endl;
 
 	EXPECT_EQ(WRITE_LIMIT / 10, writerFinished.load()) << myContainer.snapshot().dump();
@@ -260,15 +265,15 @@ TEST(edge, DefaultConstructThenReassign)
 	siddiqsoft::RWLEnvelope<nlohmann::json> envelope;
 
 	// Default-constructed json is null, which has size 0
-	EXPECT_EQ(0, envelope.observe<size_t>([](const auto& doc) { return doc.size(); }));
+	EXPECT_EQ(0, envelope.observe([](const auto& doc) noexcept -> size_t { return doc.size(); }));
 	EXPECT_TRUE(envelope.snapshot().empty() || envelope.snapshot().is_null());
 
 	nlohmann::json payload {{"key", "value"}, {"num", 42}};
 	envelope.reassign(std::move(payload));
 	EXPECT_TRUE(payload.empty());
 
-	EXPECT_EQ("value", envelope.observe<std::string>([](const auto& doc) { return doc.value("key", ""); }));
-	EXPECT_EQ(42, envelope.observe<int>([](const auto& doc) { return doc.value("num", 0); }));
+	EXPECT_EQ("value", envelope.observe([](const auto& doc) noexcept -> std::string { return doc.value("key", ""); }));
+	EXPECT_EQ(42, envelope.observe([](const auto& doc) noexcept -> int { return doc.value("num", 0); }));
 	EXPECT_EQ(2, envelope.snapshot().size());
 }
 
@@ -278,8 +283,8 @@ TEST(edge, MutateWithReturnValue)
 {
 	siddiqsoft::RWLEnvelope<nlohmann::json> envelope(nlohmann::json({{"counter", 10}}));
 
-	int oldValue = envelope.mutate<int>(
-			[](auto& doc)
+	auto oldValue = envelope.mutate(
+			[](auto& doc) noexcept -> int
 			{
 				int prev       = doc.value("counter", 0);
 				doc["counter"] = prev + 5;
@@ -287,7 +292,7 @@ TEST(edge, MutateWithReturnValue)
 			});
 
 	EXPECT_EQ(10, oldValue);
-	EXPECT_EQ(15, envelope.observe<int>([](const auto& doc) { return doc.value("counter", 0); }));
+	EXPECT_EQ(15, envelope.observe([](const auto& doc) noexcept -> int { return doc.value("counter", 0); }));
 
 	// rwa should be 1 after one mutate
 	auto info = nlohmann::json(envelope);
@@ -300,10 +305,10 @@ TEST(edge, ObserveReturnTypes)
 {
 	siddiqsoft::RWLEnvelope<nlohmann::json> envelope(nlohmann::json({{"name", "test"}, {"count", 7}, {"active", true}}));
 
-	auto name   = envelope.observe<std::string>([](const auto& doc) { return doc.value("name", ""); });
-	auto count  = envelope.observe<int>([](const auto& doc) { return doc.value("count", 0); });
-	auto active = envelope.observe<bool>([](const auto& doc) { return doc.value("active", false); });
-	auto sz     = envelope.observe<size_t>([](const auto& doc) { return doc.size(); });
+	auto name   = envelope.observe([](const auto& doc) noexcept { return doc.value("name", ""); });
+	auto count  = envelope.observe([](const auto& doc) noexcept { return doc.value("count", 0); });
+	auto active = envelope.observe([](const auto& doc) noexcept { return doc.value("active", false); });
+	auto sz     = envelope.observe([](const auto& doc) noexcept { return doc.size(); });
 
 	EXPECT_EQ("test", name);
 	EXPECT_EQ(7, count);
@@ -317,16 +322,16 @@ TEST(edge, NonJsonType)
 {
 	siddiqsoft::RWLEnvelope<std::vector<int>> envelope(std::vector<int> {1, 2, 3});
 
-	EXPECT_EQ(3, envelope.observe<size_t>([](const auto& v) { return v.size(); }));
-	EXPECT_EQ(2, envelope.observe<int>([](const auto& v) { return v[1]; }));
+	EXPECT_EQ(3, envelope.observe([](const auto& v) noexcept { return v.size(); }));
+	EXPECT_EQ(2, envelope.observe([](const auto& v) noexcept { return v[1]; }));
 
-	envelope.mutate<void>(
-			[](auto& v)
+	envelope.mutate(
+			[](auto& v) noexcept
 			{
 				v.emplace_back(4);
 				v.emplace_back(5);
 			});
-	EXPECT_EQ(5, envelope.observe<size_t>([](const auto& v) { return v.size(); }));
+	EXPECT_EQ(5, envelope.observe([](const auto& v) noexcept { return v.size(); }));
 
 	auto snap = envelope.snapshot();
 	EXPECT_EQ(std::vector<int>({1, 2, 3, 4, 5}), snap);
@@ -334,7 +339,7 @@ TEST(edge, NonJsonType)
 	// readLock / writeLock
 	if (auto const& [v, rl] = envelope.readLock(); rl) { EXPECT_EQ(5, v.size()); }
 	if (auto [v, wl] = envelope.writeLock(); wl) { v.clear(); }
-	EXPECT_EQ(0, envelope.observe<size_t>([](const auto& v) { return v.size(); }));
+	EXPECT_EQ(0, envelope.observe([](const auto& v) noexcept { return v.size(); }));
 }
 
 
@@ -345,7 +350,7 @@ TEST(edge, StringType)
 
 	EXPECT_EQ("hello", envelope.snapshot());
 
-	envelope.mutate<void>([](auto& s) { s += " world"; });
+	envelope.mutate([](auto& s) noexcept { s += " world"; });
 	EXPECT_EQ("hello world", envelope.snapshot());
 
 	envelope.reassign(std::string("replaced"));
@@ -359,9 +364,9 @@ TEST(edge, MoveSourceIsEmptyAndRwaTransferred)
 	siddiqsoft::RWLEnvelope<nlohmann::json> src(nlohmann::json({{"a", 1}}));
 
 	// Perform 3 mutates on source
-	src.mutate<void>([](auto& doc) { doc["a"] = 2; });
-	src.mutate<void>([](auto& doc) { doc["a"] = 3; });
-	src.mutate<void>([](auto& doc) { doc["a"] = 4; });
+	src.mutate([](auto& doc) noexcept { doc["a"] = 2; });
+	src.mutate([](auto& doc) noexcept { doc["a"] = 3; });
+	src.mutate([](auto& doc) noexcept { doc["a"] = 4; });
 
 	auto srcInfo = nlohmann::json(src);
 	EXPECT_EQ(3, srcInfo.value("readWriteActions", 0));
@@ -370,72 +375,16 @@ TEST(edge, MoveSourceIsEmptyAndRwaTransferred)
 	siddiqsoft::RWLEnvelope<nlohmann::json> dst(std::move(src));
 
 	// Source should be empty
-	EXPECT_TRUE(src.observe<bool>([](const auto& doc) { return doc.empty() || doc.is_null(); }));
+	EXPECT_TRUE(src.observe([](const auto& doc) noexcept { return doc.empty() || doc.is_null(); }));
 
 	// Source rwa should be 0
 	auto srcInfoAfter = nlohmann::json(src);
 	EXPECT_EQ(0, srcInfoAfter.value("readWriteActions", -1));
 
 	// Destination should have the data and the rwa counter
-	EXPECT_EQ(4, dst.observe<int>([](const auto& doc) { return doc.value("a", 0); }));
+	EXPECT_EQ(4, dst.observe([](const auto& doc) noexcept { return doc.value("a", 0); }));
 	auto dstInfo = nlohmann::json(dst);
 	EXPECT_EQ(3, dstInfo.value("readWriteActions", 0));
-}
-
-
-// Edge: throwing callback in mutate should not corrupt state
-TEST(edge, ThrowingMutateCallback)
-{
-	siddiqsoft::RWLEnvelope<nlohmann::json> envelope(nlohmann::json({{"value", 100}}));
-
-	// This mutate should succeed
-	envelope.mutate<void>([](auto& doc) { doc["value"] = 200; });
-	EXPECT_EQ(200, envelope.observe<int>([](const auto& doc) { return doc.value("value", 0); }));
-
-	// This mutate throws after partial modification
-	try
-	{
-		envelope.mutate<void>(
-				[](auto& doc)
-				{
-					doc["value"] = 999;
-					throw std::runtime_error("intentional");
-				});
-	}
-	catch (const std::runtime_error&)
-	{
-		// expected
-	}
-
-	// The value was modified to 999 before the throw — the lock was released properly
-	// and the envelope is still usable (not deadlocked)
-	int val = envelope.observe<int>([](const auto& doc) { return doc.value("value", 0); });
-	EXPECT_EQ(999, val);
-
-	// Verify the envelope is not deadlocked by doing another mutate
-	envelope.mutate<void>([](auto& doc) { doc["value"] = 300; });
-	EXPECT_EQ(300, envelope.observe<int>([](const auto& doc) { return doc.value("value", 0); }));
-}
-
-
-// Edge: throwing callback in observe should not deadlock
-TEST(edge, ThrowingObserveCallback)
-{
-	siddiqsoft::RWLEnvelope<nlohmann::json> envelope(nlohmann::json({{"x", 42}}));
-
-	try
-	{
-		envelope.observe<void>([](const auto& doc) { throw std::runtime_error("observe throw"); });
-	}
-	catch (const std::runtime_error&)
-	{
-		// expected
-	}
-
-	// Verify not deadlocked — can still read and write
-	EXPECT_EQ(42, envelope.observe<int>([](const auto& doc) { return doc.value("x", 0); }));
-	envelope.mutate<void>([](auto& doc) { doc["x"] = 43; });
-	EXPECT_EQ(43, envelope.observe<int>([](const auto& doc) { return doc.value("x", 0); }));
 }
 
 
@@ -445,14 +394,14 @@ TEST(edge, SnapshotIsIndependentCopy)
 	siddiqsoft::RWLEnvelope<nlohmann::json> envelope(nlohmann::json({{"val", 1}}));
 
 	auto snap1 = envelope.snapshot();
-	envelope.mutate<void>([](auto& doc) { doc["val"] = 2; });
+	envelope.mutate([](auto& doc) noexcept { doc["val"] = 2; });
 	auto snap2 = envelope.snapshot();
-	envelope.mutate<void>([](auto& doc) { doc["val"] = 3; });
+	envelope.mutate([](auto& doc) noexcept { doc["val"] = 3; });
 
 	// snap1 and snap2 should be independent of current state
 	EXPECT_EQ(1, snap1.value("val", 0));
 	EXPECT_EQ(2, snap2.value("val", 0));
-	EXPECT_EQ(3, envelope.observe<int>([](const auto& doc) { return doc.value("val", 0); }));
+	EXPECT_EQ(3, envelope.observe([](const auto& doc) noexcept { return doc.value("val", 0); }));
 }
 
 
@@ -466,7 +415,7 @@ TEST(edge, MultipleReassigns)
 		nlohmann::json doc {{"iteration", i}};
 		envelope.reassign(std::move(doc));
 		EXPECT_TRUE(doc.empty());
-		EXPECT_EQ(i, envelope.observe<int>([](const auto& d) { return d.value("iteration", -1); }));
+		EXPECT_EQ(i, envelope.observe([](const auto& d) noexcept { return d.value("iteration", -1); }));
 	}
 }
 
@@ -495,8 +444,8 @@ TEST(stress, MonotonicCounterIntegrity)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>(
-								[](auto& doc)
+						envelope.mutate(
+								[](auto& doc) noexcept
 								{
 									auto cur       = doc.value("counter", 0);
 									doc["counter"] = cur + 1;
@@ -514,7 +463,7 @@ TEST(stress, MonotonicCounterIntegrity)
 					int lastSeen = 0;
 					for (uint32_t j = 0; j < ITERATIONS * 2; j++)
 					{
-						int current = envelope.observe<int>([](const auto& doc) { return doc.value("counter", 0); });
+						int current = envelope.observe([](const auto& doc) noexcept { return doc.value("counter", 0); });
 						if (current < lastSeen) { integrityViolation.store(true); }
 						lastSeen = current;
 					}
@@ -526,7 +475,7 @@ TEST(stress, MonotonicCounterIntegrity)
 	threads.clear();
 
 	EXPECT_FALSE(integrityViolation.load()) << "Counter went backwards �� torn read/write detected";
-	int finalCounter = envelope.observe<int>([](const auto& doc) { return doc.value("counter", 0); });
+	int finalCounter = envelope.observe([](const auto& doc) noexcept { return doc.value("counter", 0); });
 	EXPECT_EQ(static_cast<int>(WRITER_COUNT * ITERATIONS), finalCounter);
 }
 
@@ -551,8 +500,8 @@ TEST(stress, SnapshotConsistency)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>(
-								[](auto& doc)
+						envelope.mutate(
+								[](auto& doc) noexcept
 								{
 									auto next = doc.value("a", 0) + 1;
 									doc["a"]  = next;
@@ -639,7 +588,7 @@ TEST(stress, ConcurrentReassignVsObserve)
 	threads.clear();
 
 	EXPECT_FALSE(corruptionFound.load()) << "reassign() produced inconsistent state visible to readers";
-	int finalVersion = envelope.observe<int>([](const auto& doc) { return doc.value("version", -1); });
+	int finalVersion = envelope.observe([](const auto& doc) noexcept { return doc.value("version", -1); });
 	EXPECT_EQ(static_cast<int>(ITERATIONS), finalVersion);
 }
 
@@ -664,7 +613,7 @@ TEST(stress, HighContentionZeroSleep)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([](auto& doc) { doc["sum"] = doc.value("sum", 0) + 1; });
+						envelope.mutate([](auto& doc) noexcept { doc["sum"] = doc.value("sum", 0) + 1; });
 					}
 				});
 	}
@@ -677,7 +626,7 @@ TEST(stress, HighContentionZeroSleep)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						int val = envelope.observe<int>([](const auto& doc) { return doc.value("sum", -1); });
+						int val = envelope.observe([](const auto& doc) noexcept { return doc.value("sum", -1); });
 						EXPECT_GE(val, 0);
 						totalReads.fetch_add(1, std::memory_order_relaxed);
 					}
@@ -688,7 +637,7 @@ TEST(stress, HighContentionZeroSleep)
 	startSignal.notify_all();
 	threads.clear();
 
-	int finalSum = envelope.observe<int>([](const auto& doc) { return doc.value("sum", -1); });
+	int finalSum = envelope.observe([](const auto& doc) noexcept { return doc.value("sum", -1); });
 	EXPECT_EQ(static_cast<int>(WRITER_COUNT * ITERATIONS), finalSum);
 	EXPECT_EQ(static_cast<uint64_t>(READER_COUNT) * ITERATIONS, totalReads.load());
 }
@@ -715,8 +664,8 @@ TEST(stress, MixedApiConcurrency)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>(
-								[&](auto& doc)
+						envelope.mutate(
+								[&](auto& doc) noexcept
 								{
 									doc["counter"] = doc.value("counter", 0) + 1;
 									mutateCount.fetch_add(1, std::memory_order_relaxed);
@@ -752,7 +701,7 @@ TEST(stress, MixedApiConcurrency)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						int val = envelope.observe<int>([](const auto& doc) { return doc.value("counter", -1); });
+						int val = envelope.observe([](const auto& doc) noexcept { return doc.value("counter", -1); });
 						if (val < 0) failure.store(true);
 					}
 				});
@@ -795,7 +744,7 @@ TEST(stress, MixedApiConcurrency)
 	threads.clear();
 
 	EXPECT_FALSE(failure.load()) << "A reader saw a negative counter — data corruption";
-	int      finalCounter = envelope.observe<int>([](const auto& doc) { return doc.value("counter", -1); });
+	int      finalCounter = envelope.observe([](const auto& doc) noexcept { return doc.value("counter", -1); });
 	uint32_t totalWrites  = mutateCount.load() + writeLockCount.load();
 	EXPECT_EQ(static_cast<int>(totalWrites), finalCounter)
 			<< "Final counter (" << finalCounter << ") != total writes (" << totalWrites << ")";
@@ -821,7 +770,7 @@ TEST(stress, RwaCounterAccuracy)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([](auto& doc) { doc["x"] = doc.value("x", 0) + 1; });
+						envelope.mutate([](auto& doc) noexcept { doc["x"] = doc.value("x", 0) + 1; });
 					}
 				});
 	}
@@ -834,7 +783,7 @@ TEST(stress, RwaCounterAccuracy)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.observe<int>([](const auto& doc) { return doc.value("x", 0); });
+						envelope.observe([](const auto& doc) noexcept { return doc.value("x", 0); });
 					}
 				});
 	}
@@ -848,7 +797,7 @@ TEST(stress, RwaCounterAccuracy)
 	EXPECT_EQ(static_cast<uint64_t>(WRITER_COUNT) * ITERATIONS, rwa)
 			<< "rwa counter (" << rwa << ") != expected (" << WRITER_COUNT * ITERATIONS << ")";
 
-	int finalX = envelope.observe<int>([](const auto& doc) { return doc.value("x", 0); });
+	int finalX = envelope.observe([](const auto& doc) noexcept { return doc.value("x", 0); });
 	EXPECT_EQ(static_cast<int>(WRITER_COUNT * ITERATIONS), finalX);
 }
 
@@ -873,7 +822,7 @@ TEST(stress, ConcurrentObserveWithReturn)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<void>([](auto& doc) { doc["value"] = doc.value("value", 0) + 1; });
+						envelope.mutate([](auto& doc) noexcept { doc["value"] = doc.value("value", 0) + 1; });
 					}
 				});
 	}
@@ -887,13 +836,13 @@ TEST(stress, ConcurrentObserveWithReturn)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						std::string s = envelope.observe<std::string>([](const auto& doc) { return doc.dump(); });
+						std::string s = envelope.observe([](const auto& doc) noexcept { return doc.dump(); });
 						if (s.empty()) failure.store(true);
 
-						int v = envelope.observe<int>([](const auto& doc) { return doc.value("value", -1); });
+						int v = envelope.observe([](const auto& doc) noexcept { return doc.value("value", -1); });
 						if (v < 0) failure.store(true);
 
-						bool has = envelope.observe<bool>([](const auto& doc) { return doc.contains("value"); });
+						bool has = envelope.observe([](const auto& doc) noexcept { return doc.contains("value"); });
 						if (!has) failure.store(true);
 					}
 				});
@@ -949,13 +898,13 @@ TEST(tests, MoveConstructor)
 	siddiqsoft::RWLEnvelope<nlohmann::json> docl({{"foo", "bar"}, {"few", "lar"}});
 
 	// Check we have pre-change value..
-	EXPECT_EQ("bar", docl.observe<std::string>([](const auto& doc) { return doc.value("foo", ""); }));
+	EXPECT_EQ("bar", docl.observe([](const auto& doc) noexcept { return doc.value("foo", ""); }));
 
 	// Modify the item
-	docl.mutate<void>([](auto& doc) { doc["foo"] = "bare"; });
+	docl.mutate([](auto& doc) noexcept { doc["foo"] = "bare"; });
 
 	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
-	EXPECT_TRUE(docl.observe<bool>([](const auto& doc) { return doc.value("foo", "").find("bare") == 0; }));
+	EXPECT_TRUE(docl.observe([](const auto& doc) noexcept { return doc.value("foo", "").find("bare") == 0; }));
 
 	// Check to make sure that the statistics match
 	auto info = nlohmann::json(docl);
@@ -965,20 +914,21 @@ TEST(tests, MoveConstructor)
 	siddiqsoft::RWLEnvelope<nlohmann::json> docl2(std::move(docl));
 
 	// Must be empty since we moved it into the envelope
-	EXPECT_TRUE(docl.observe<bool>([](const auto& doc) { return doc.empty(); }));
+	EXPECT_TRUE(docl.observe([](const auto& doc) noexcept { return doc.empty(); }));
 
 	// Check we have pre-change value..
-	EXPECT_EQ("lar", docl2.observe<std::string>([](const auto& doc) { return doc.value("few", ""); }));
+	EXPECT_EQ("lar", docl2.observe([](const auto& doc) noexcept { return doc.value("few", ""); }));
 
 	// Modify the item
-	docl2.mutate<void>([](auto& doc) { doc["few"] = "lare"; });
+	docl2.mutate([](auto& doc) noexcept { doc["few"] = "lare"; });
 
 	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
-	EXPECT_TRUE(docl2.observe<bool>(
-			[](const auto& doc) { return (doc.value("foo", "").find("bare") == 0) && (doc.value("few", "").find("lare") == 0); }));
+	EXPECT_TRUE(docl2.observe([](const auto& doc) noexcept
+	                            { return (doc.value("foo", "").find("bare") == 0) && (doc.value("few", "").find("lare") == 0); }));
 
 	// Check to make sure that the statistics match
 	auto info2 = nlohmann::json(docl2);
 	// We performed two mutates.. one from the previous object and one in the new copy
 	EXPECT_EQ(2, info2.value("readWriteActions", 0));
 }
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

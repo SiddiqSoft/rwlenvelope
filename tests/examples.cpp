@@ -1,21 +1,22 @@
 #include "gtest/gtest.h"
+#include <atomic>
 #include <format>
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/RWLEnvelope.hpp"
 
-
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 TEST(examples, WithCallbacks)
 {
 	siddiqsoft::RWLEnvelope<nlohmann::json> docl({{"foo", "bar"}, {"few", "lar"}});
 
 	// Check we have pre-change value..
-	EXPECT_EQ("bar", docl.observe<std::string>([](const auto& doc) { return doc.value("foo", ""); }));
+	EXPECT_EQ("bar", docl.observe([](const auto& doc) noexcept { return doc.value("foo", ""); }));
 
 	// Modify the item
-	docl.mutate<void>([](auto& doc) { doc["foo"] = "bare"; });
+	docl.mutate([](auto& doc) noexcept { doc["foo"] = "bare"; });
 
 	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
-	EXPECT_TRUE(docl.observe<bool>([](const auto& doc) { return doc.value("foo", "").find("bare") == 0; }));
+	EXPECT_TRUE(docl.observe([](const auto& doc) noexcept { return doc.value("foo", "").find("bare") == 0; }));
 
 	// Check to make sure that the statistics match
 	auto info = nlohmann::json(docl);
@@ -49,11 +50,14 @@ TEST(examples, AssignWithCallbacks)
 	EXPECT_TRUE(doc2.empty());
 
 	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
-	EXPECT_TRUE(docl.observe<bool>([](const auto& doc) -> bool {
-		return (doc.value("fee", 0xfa17) == 0x0fee) && (doc.value("baa", 0xfa17) == 0x0baa) && (doc.value("bee", 0xfa17) == 0x0bee);
-	}));
+	EXPECT_TRUE(docl.observe(
+			[](const auto& doc) noexcept -> bool
+			{
+				return (doc.value("fee", 0xfa17) == 0x0fee) && (doc.value("baa", 0xfa17) == 0x0baa) &&
+		               (doc.value("bee", 0xfa17) == 0x0bee);
+			}));
 
-	EXPECT_EQ(3, docl.observe<size_t>([](const auto& doc) { return doc.size(); }));
+	EXPECT_EQ(3, docl.observe([](const auto& doc) noexcept { return doc.size(); }));
 }
 
 
@@ -74,3 +78,43 @@ TEST(examples, AssignWithDirectLocks)
 	// Check we have post-change value..
 	if (const auto& [doc, rl] = docl.readLock(); rl) { EXPECT_EQ(3, doc.size()); }
 }
+
+TEST(examples, CallbacksWithGlobalArgs)
+{
+	struct Demo
+	{
+		int val {0};
+	};
+
+	std::atomic_uint              counter {0};
+	siddiqsoft::RWLEnvelope<Demo> safeDemo;
+
+	auto localValue = safeDemo.mutate(
+			[](auto& dd, auto& theCounter) noexcept
+			{
+				// Store the current value..
+				dd.val = theCounter.load();
+				// Increment the global counter..
+				theCounter++;
+
+				return dd.val;
+			},
+			counter);
+	// The global counter must be 1..
+	EXPECT_EQ(1, counter.load());
+	// The local internal should be 0..
+	EXPECT_EQ(0, localValue);
+
+	auto localValue2nd = safeDemo.observe(
+			[](const auto& dd, auto& theCounter) noexcept
+			{
+				theCounter++;
+				return dd.val;
+			},
+			counter);
+	// The global counter must be 1..
+	EXPECT_EQ(2, counter.load());
+	// The local internal should be 0..
+	EXPECT_EQ(0, localValue2nd);
+}
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
