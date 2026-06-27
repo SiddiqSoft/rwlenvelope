@@ -69,6 +69,7 @@
 #error "tests: Must have format C++20"
 #endif
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 TEST(tests, Simple)
 {
@@ -930,3 +931,4 @@ TEST(tests, MoveConstructor)
 	// We performed two mutates.. one from the previous object and one in the new copy
 	EXPECT_EQ(2, info2.value("readWriteActions", 0));
 }
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

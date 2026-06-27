@@ -46,6 +46,8 @@
 // CRITICAL RACE CONDITION TESTS
 // ============================================================================
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
+
 // Race: Multiple writers racing against each other — verify no lost updates
 TEST(race_critical, WriterWriterRaceCondition)
 {
@@ -721,7 +723,7 @@ TEST(race_low, ConcurrentMoveConstructor)
 							envelope         = std::move(newEnvelope);
 
 							// Verify we can still use it after move
-							auto val = envelope->observe([](const auto& doc) noexcept { return doc.value("value", 0); });
+							auto val = envelope->observe([](const auto& doc) noexcept { return doc.value("value", 0u); });
 							if (val != static_cast<uint32_t>(threadId)) { failure.store(true); }
 						}
 						catch (const std::exception&)
@@ -738,3 +740,4 @@ TEST(race_low, ConcurrentMoveConstructor)
 
 	EXPECT_FALSE(failure.load()) << "Exception or data corruption during concurrent move constructor";
 }
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

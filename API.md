@@ -1,6 +1,6 @@
 # RWLEnvelope API Documentation
 
-## Breaking Changes (v1.5.0)
+## API Changes (v1.5.0+)
 
 **Version 1.5.0 introduces breaking changes to the API:**
 
@@ -29,7 +29,7 @@ See the [Migration Examples](#migration-examples) section below for detailed bef
 
 ## Requirements
 
-- **C++ Standard**: C++23 or later
+- **C++ Standard**: C++20 or later (requires C++20 concepts support)
 - **Required Headers**: `<shared_mutex>`, `<functional>`, `<tuple>`, `<utility>`, `<concepts>`
 - **Compiler Support**: Must support `[[nodiscard]]` attribute and C++20 concepts
 - **Optional**: `nlohmann/json` library for JSON serialization support
