@@ -62,7 +62,7 @@ With RWLEnvelope, the same code becomes cleaner and safer:
 siddiqsoft::RWLEnvelope<std::map<std::string, int>> data;
 
 // Reading
-data.observe<>([](const auto& m) {
+data.observe([](const auto& m) {
     auto it = m.find("key");
     if (it != m.end()) {
         std::cout << it->second << std::endl;
@@ -70,7 +70,7 @@ data.observe<>([](const auto& m) {
 });
 
 // Writing
-data.mutate<>([](auto& m) {
+data.mutate([](auto& m) {
     m["key"] = 42;
 });
 ```
@@ -100,12 +100,12 @@ data.mutate<>([](auto& m) {
 siddiqsoft::RWLEnvelope<AppConfig> config;
 
 // Multiple threads reading config
-config.observe<>([](const auto& cfg) {
+config.observe([](const auto& cfg) {
     return cfg.getDatabaseUrl();
 });
 
 // Single thread updating config
-config.mutate<>([](auto& cfg) {
+config.mutate([](auto& cfg) {
     cfg.setDatabaseUrl("new_url");
 });
 ```
@@ -115,12 +115,12 @@ config.mutate<>([](auto& cfg) {
 siddiqsoft::RWLEnvelope<std::unordered_map<std::string, CacheEntry>> cache;
 
 // Fast concurrent reads
-cache.observe<>([](const auto& c) {
+cache.observe([](const auto& c) {
     return c.at("key");
 });
 
 // Exclusive writes
-cache.mutate<>([](auto& c) {
+cache.mutate([](auto& c) {
     c["key"] = computeValue();
 });
 ```
@@ -130,12 +130,12 @@ cache.mutate<>([](auto& c) {
 siddiqsoft::RWLEnvelope<ServiceState> state;
 
 // Multiple reader threads
-state.observe<>([](const auto& s) {
+state.observe([](const auto& s) {
     return s.isHealthy();
 });
 
 // Single writer thread
-state.mutate<>([](auto& s) {
+state.mutate([](auto& s) {
     s.updateMetrics();
 });
 ```
@@ -179,11 +179,11 @@ TEST(examples, AssignWithCallbacks)
 	EXPECT_TRUE(doc2.empty());
 
 	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
-	EXPECT_TRUE(docl.observe<> bool {
+	EXPECT_TRUE(docl.observe bool {
 		return (doc.value("fee", 0xfa17) == 0x0fee) && (doc.value("baa", 0xfa17) == 0x0baa) && (doc.value("bee", 0xfa17) == 0x0bee);
 	}));
 
-	EXPECT_EQ(3, docl.observe<>([](const auto& doc) { return doc.size(); }));
+	EXPECT_EQ(3, docl.observe([](const auto& doc) { return doc.size(); }));
 }
 
 

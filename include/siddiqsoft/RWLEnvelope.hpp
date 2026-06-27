@@ -197,6 +197,7 @@ namespace siddiqsoft
 		/// @note The callback MUST be marked noexcept. Callbacks that may throw will not compile.
 		///       We ignore any exceptions. Most cases of issues will be caught by the compiler during
 		///       testing code.
+        // NOLINTBEGIN(clang-diagnostic-return-type)
 		template <typename Callback, typename... Args>
 			requires MutateCallbackNoexcept<ContainerType, Callback, Args...>
 		auto mutate(Callback cbf, Args&&... args)
@@ -212,6 +213,7 @@ namespace siddiqsoft
 			{
 			}
 		}
+        // NOLINTEND(clang-diagnostic-return-type)
 
 
 		/// @brief Returns a copy of the underlying object

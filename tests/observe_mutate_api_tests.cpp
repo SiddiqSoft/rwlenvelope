@@ -48,6 +48,7 @@
 // OBSERVE AND MUTATE API COMPARISON TESTS
 // ============================================================================
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 // Test: observe() does not increment RWA counter
 TEST(observe_mutate_api, ObserveDoesNotIncrementRwa)
@@ -60,7 +61,7 @@ TEST(observe_mutate_api, ObserveDoesNotIncrementRwa)
 	// Call observe() multiple times
 	for (int i = 0; i < 100; i++)
 	{
-		envelope.observe<>([](const auto& doc) noexcept { return doc.value("x", 0); });
+		envelope.observe([](const auto& doc) noexcept { return doc.value("x", 0); });
 	}
 
 	auto finalInfo = nlohmann::json(envelope);
@@ -81,13 +82,13 @@ TEST(observe_mutate_api, RwaAsymmetry)
 	// Perform observe operations
 	for (uint32_t i = 0; i < OBSERVE_COUNT; i++)
 	{
-		envelope.observe<>([](const auto& doc) noexcept { return doc.value("counter", 0); });
+		envelope.observe([](const auto& doc) noexcept { return doc.value("counter", 0); });
 	}
 
 	// Perform mutate operations
 	for (uint32_t i = 0; i < MUTATE_COUNT; i++)
 	{
-		envelope.mutate<>([](auto& doc) noexcept { doc["counter"] = doc.value("counter", 0) + 1; });
+		envelope.mutate([](auto& doc) noexcept { doc["counter"] = doc.value("counter", 0) + 1; });
 	}
 
 	auto     info = nlohmann::json(envelope);
@@ -105,12 +106,12 @@ TEST(observe_mutate_api, ExceptionSafetyPartialModification)
 	siddiqsoft::RWLEnvelope<nlohmann::json> envelope(nlohmann::json({{"a", 1}, {"b", 2}, {"c", 3}}));
 
 	// First, verify initial state
-	EXPECT_EQ(1, envelope.observe<>([](const auto& doc) noexcept { return doc.value("a", 0); }));
+	EXPECT_EQ(1, envelope.observe([](const auto& doc) noexcept { return doc.value("a", 0); }));
 
 	// Mutate with exception after partial modification
 	try
 	{
-		envelope.mutate<>(
+		envelope.mutate(
 				[](auto& doc) noexcept
 				{
 					doc["a"] = 100;
@@ -125,13 +126,13 @@ TEST(observe_mutate_api, ExceptionSafetyPartialModification)
 	}
 
 	// Verify partial modifications were persisted (lock was released properly)
-	EXPECT_EQ(100, envelope.observe<>([](const auto& doc) noexcept { return doc.value("a", 0); }));
-	EXPECT_EQ(200, envelope.observe<>([](const auto& doc) noexcept { return doc.value("b", 0); }));
-	EXPECT_EQ(3, envelope.observe<>([](const auto& doc) noexcept { return doc.value("c", 0); }));
+	EXPECT_EQ(100, envelope.observe([](const auto& doc) noexcept { return doc.value("a", 0); }));
+	EXPECT_EQ(200, envelope.observe([](const auto& doc) noexcept { return doc.value("b", 0); }));
+	EXPECT_EQ(3, envelope.observe([](const auto& doc) noexcept { return doc.value("c", 0); }));
 
 	// Verify envelope is still usable (not deadlocked)
-	envelope.mutate<>([](auto& doc) noexcept { doc["a"] = 1000; });
-	EXPECT_EQ(1000, envelope.observe<>([](const auto& doc) noexcept { return doc.value("a", 0); }));
+	envelope.mutate([](auto& doc) noexcept { doc["a"] = 1000; });
+	EXPECT_EQ(1000, envelope.observe([](const auto& doc) noexcept { return doc.value("a", 0); }));
 }
 
 // Test: observe() exception safety doesn't deadlock
@@ -142,7 +143,7 @@ TEST(observe_mutate_api, ObserveExceptionSafety)
 	// observe() throws
 	try
 	{
-		envelope.observe<>([](const auto& doc) noexcept { throw std::runtime_error("observe throw"); });
+		envelope.observe([](const auto& doc) noexcept { throw std::runtime_error("observe throw"); });
 	}
 	catch (const std::runtime_error&)
 	{
@@ -150,9 +151,9 @@ TEST(observe_mutate_api, ObserveExceptionSafety)
 	}
 
 	// Verify envelope is still usable
-	EXPECT_EQ(42, envelope.observe<>([](const auto& doc) noexcept { return doc.value("x", 0); }));
-	envelope.mutate<>([](auto& doc) noexcept { doc["x"] = 43; });
-	EXPECT_EQ(43, envelope.observe<>([](const auto& doc) noexcept { return doc.value("x", 0); }));
+	EXPECT_EQ(42, envelope.observe([](const auto& doc) noexcept { return doc.value("x", 0); }));
+	envelope.mutate([](auto& doc) noexcept { doc["x"] = 43; });
+	EXPECT_EQ(43, envelope.observe([](const auto& doc) noexcept { return doc.value("x", 0); }));
 }
 #endif
 
@@ -179,7 +180,7 @@ TEST(observe_mutate_api, ConcurrentObserveNonBlocking)
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
 						std::string data =
-								envelope.observe<>([](const auto& doc) noexcept { return doc.value("data", std::string("")); });
+								envelope.observe([](const auto& doc) noexcept { return doc.value("data", std::string("")); });
 						EXPECT_EQ("immutable", data);
 						totalReads.fetch_add(1, std::memory_order_relaxed);
 					}
@@ -212,7 +213,7 @@ TEST(observe_mutate_api, MutateBlocksObserve)
 			[&]()
 			{
 				startSignal.wait(0);
-				envelope.mutate<>(
+				envelope.mutate(
 						[&](auto& doc) noexcept
 						{
 							// Simulate work
@@ -230,7 +231,7 @@ TEST(observe_mutate_api, MutateBlocksObserve)
 					startSignal.wait(0);
 					// Small delay to ensure writer starts first
 					std::this_thread::sleep_for(std::chrono::milliseconds(10));
-					envelope.observe<>(
+					envelope.observe(
 							[&](const auto& doc) noexcept
 							{
 								observerCount.fetch_add(1, std::memory_order_relaxed);
@@ -265,7 +266,7 @@ TEST(observe_mutate_api, RwaCounterConcurrentAccuracy)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<>([](auto& doc) noexcept { doc["x"] = doc.value("x", 0) + 1; });
+						envelope.mutate([](auto& doc) noexcept { doc["x"] = doc.value("x", 0) + 1; });
 					}
 				});
 	}
@@ -301,7 +302,7 @@ TEST(observe_mutate_api, DataIntegrityUnderConcurrency)
 					startSignal.wait(0);
 					for (uint32_t j = 0; j < ITERATIONS; j++)
 					{
-						envelope.mutate<>(
+						envelope.mutate(
 								[j](auto& doc) noexcept
 								{
 									doc["a"] = static_cast<int>(j);
@@ -337,3 +338,5 @@ TEST(observe_mutate_api, DataIntegrityUnderConcurrency)
 
 	EXPECT_FALSE(inconsistency.load()) << "Data integrity violation: fields not updated atomically";
 }
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
