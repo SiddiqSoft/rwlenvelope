@@ -124,23 +124,35 @@ parameters:
 # ============================================================================
 variables:
   # Auto-enable publishing on main/master branches
-  ${{ if and(eq(parameters.PublishNuGet, false), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))) }}:
-    PublishNuGet: true
-    PublishGitHub: true
-    DeployPages: true
-  ${{ else }}:
-    PublishNuGet: ${{ parameters.PublishNuGet }}
-    PublishGitHub: ${{ parameters.PublishGitHub }}
-    DeployPages: ${{ parameters.DeployPages }}
+  - ${{ if and(eq(parameters.PublishNuGet, false), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))) }}:
+    - name: PublishNuGet
+      value: true
+    - name: PublishGitHub
+      value: true
+    - name: DeployPages
+      value: true
+  - ${{ else }}:
+    - name: PublishNuGet
+      value: ${{ parameters.PublishNuGet }}
+    - name: PublishGitHub
+      value: ${{ parameters.PublishGitHub }}
+    - name: DeployPages
+      value: ${{ parameters.DeployPages }}
+  - group: Common
 
   # System information
-  AgentOS: $(Agent.OS)
-  AgentArch: $(Agent.OSArchitecture)
+  - name: AgentOS
+    value: $(Agent.OS)
+  - name: AgentArch
+    value: $(Agent.OSArchitecture)
 
   # Build paths
-  cpmCachePath: $(Agent.HomeDirectory)/.cpmcache
-  buildOutputPat_h: $(System.DefaultWorkingDirectory)/build/$(cmakePreset)
-  testResultsPat_h: $(System.DefaultWorkingDirectory)/build/$(cmakePreset)/tests/results
+  - name: cpmCachePath
+    value: $(Agent.HomeDirectory)/.cpmcache
+  - name: buildOutputPath
+    value: $(System.DefaultWorkingDirectory)/build/$(cmakePreset)
+  - name: testResultsPath
+    value: $(System.DefaultWorkingDirectory)/build/$(cmakePreset)/tests/results
 
 # ============================================================================
 # STAGES
