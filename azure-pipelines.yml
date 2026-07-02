@@ -8,11 +8,13 @@
 #    - Linux (x64) with Clang and GCC
 # 2. Runs tests on all platforms (configurable)
 # 3. Publishes to NuGet and GitHub (on main/master branches)
+# 4. Deploys documentation to GitHub Pages (on main/master branches)
 #
 # Pipeline Stages:
 # 1. Windows - Cleanup, build, and test for Windows with matrix for architecture and compiler
 # 2. Linux - Cleanup, build, and test for Linux with matrix for architecture and compiler
 # 3. Publication - Publishes to NuGet and GitHub
+# 4. Documentation - Builds and deploys Doxygen docs to GitHub Pages
 #
 # Documentation: See PIPELINE_DOCUMENTATION_INDEX.md for detailed information
 # ============================================================================
@@ -32,6 +34,7 @@ trigger:
     exclude:
       - README.md
       - .azure/*
+      - docs/* # Sometimes we would like to deploy manually
       - azure-pipelines.yml # Avoids recursive triggers when modifying the pipeline itself
 pr:
   branches:
@@ -53,7 +56,7 @@ resources:
 parameters:
   - name: Architectures
     type: stringList
-    default: [ arm64, x64 ]
+    default: [ arm64 ]
     values: [ arm64, x64 ]
     displayName: "Architectures to build (x64, arm64)"
   
@@ -72,7 +75,7 @@ parameters:
 
   - name: Compilers_Linux
     type: stringList
-    default: [ Clang, GCC ]
+    default: [ Clang ]
     values: [ Clang, GCC ]
     displayName: "Linux compilers to build (Clang, GCC)"
 
@@ -105,6 +108,11 @@ parameters:
     default: false
     displayName: "Create GitHub release (auto-enabled on main/master)"
 
+  - name: DeployPages
+    type: boolean
+    default: false
+    displayName: "Deploy documentation to GitHub Pages (auto-enabled on main/master)"
+
   # Cleanup
   - name: Cleanup
     type: boolean
@@ -119,9 +127,11 @@ variables:
   ${{ if and(eq(parameters.PublishNuGet, false), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))) }}:
     PublishNuGet: true
     PublishGitHub: true
+    DeployPages: true
   ${{ else }}:
     PublishNuGet: ${{ parameters.PublishNuGet }}
     PublishGitHub: ${{ parameters.PublishGitHub }}
+    DeployPages: ${{ parameters.DeployPages }}
 
   # System information
   AgentOS: $(Agent.OS)
@@ -162,7 +172,7 @@ stages:
         publishNuGet: ${{ variables.PublishNuGet }}
 
   # ==========================================================================
-  # STAGE 1: LINUX BUILD
+  # STAGE 2: LINUX BUILD
   # ==========================================================================
   - stage: Linux
     displayName: Linux
@@ -205,3 +215,17 @@ stages:
         parameters:
           displayName: GitHub Release
           PublishGitHub: ${{ variables.PublishGitHub }}
+
+  # ==========================================================================
+  # STAGE 4: DOCUMENTATION DEPLOYMENT
+  # This stage can be run independently and without the requisite code build.
+  # ==========================================================================
+  - stage: Documentation
+    displayName: Documentation
+    dependsOn: []
+    condition: or(eq(${{ variables.DeployPages }}, true), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master')))
+    jobs:
+      - template: .azure/az-deploy-pages.yml
+        parameters:
+          displayName: Deploy to GitHub Pages
+          DeployPages: ${{ variables.DeployPages }}
