@@ -355,7 +355,7 @@ USE_MDFILE_AS_MAINPAGE = YES
 
 # The MAINPAGE_NAME tag can be used to specify the name of the markdown file
 # that is used as the main page of the documentation.
-MAINPAGE_NAME          = API
+MAINPAGE_NAME          = README
 
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing
@@ -585,7 +585,7 @@ TREEVIEW_WIDTH         = 250
 EXT_LINKS_IN_WINDOW    = NO
 OBFUSCATE_EMAILS       = YES
 HTML_FORMULA_FORMAT    = png
-FORMULA_FONTSIZE       = 10
+FORMULA_FONTSIZE       = 13
 
 # Use the FORMULA_TRANSPARENT tag to determine whether or not the images
 # generated for formulas are transparent PNGs.
@@ -910,7 +910,7 @@ DOT_FONTNAME           = Helvetica
 
 # The DOT_FONTSIZE tag can be used to set the fontsize (in points) of labels
 # in generated dot graphs.
-DOT_FONTSIZE           = 10
+DOT_FONTSIZE           = 13
 
 # By default doxygen will tell dot to use the Helvetica font family.
 DOT_FONTNAME_GRAPH     = Helvetica
@@ -1026,7 +1026,7 @@ DOT_FONTNAME           = Helvetica
 
 # The DOT_FONTSIZE tag can be used to set the fontsize (in points) of labels
 # in generated dot graphs.
-DOT_FONTSIZE           = 10
+DOT_FONTSIZE           = 13
 
 # Enable the use of user-defined image magick conversion tools to process
 # generated graphs.

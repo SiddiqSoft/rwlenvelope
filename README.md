@@ -156,7 +156,7 @@ state.mutate([&myMetrics](auto& s) noexcept {
 
 # API Documentation
 
-For comprehensive API documentation, including detailed descriptions of all methods, usage patterns, and examples, see [**API.md**](API.md).
+For comprehensive API documentation, including detailed descriptions of all methods, usage patterns, and examples, see [**docs/README.md**](docs/README.md).
 
 # Requirements
 - You must be able to use [`<shared_mutex>`](https://en.cppreference.com/w/cpp/thread/shared_mutex) and [`<mutex>`](https://en.cppreference.com/w/cpp/thread/mutex).
