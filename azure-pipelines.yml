@@ -62,7 +62,7 @@ parameters:
   
   - name: Platforms
     type: stringList
-    default: [ Windows, Linux ]
+    default: [ Linux ]
     values: [ Windows, Linux, Darwin ]
     displayName: "Platforms to build (Windows, Linux)"
   
@@ -94,7 +94,7 @@ parameters:
   # Testing
   - name: RunTests
     type: boolean
-    default: true
+    default: false
     displayName: "Run tests after building"
 
   # Publishing
@@ -110,7 +110,7 @@ parameters:
 
   - name: DeployPages
     type: boolean
-    default: false
+    default: true
     displayName: "Deploy documentation to GitHub Pages (auto-enabled on main/master)"
 
   # Cleanup
