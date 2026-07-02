@@ -1,6 +1,7 @@
 # RWLEnvelope API Documentation
 
-[![CodeQL](https://github.com/SiddiqSoft/RWLEnvelope/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/SiddiqSoft/RWLEnvelope/actions/workflows/codeql-analysis.yml)
+<img align="right" src="https://gravatar.com/avatar/b22603b65d11dcab44885c65e44f7dc9">
+
 [![Build Status](https://dev.azure.com/siddiqsoft/siddiqsoft/_apis/build/status/SiddiqSoft.rwlenvelope?branchName=main)](https://dev.azure.com/siddiqsoft/siddiqsoft/_build/latest?definitionId=7&branchName=main)
 ![](https://img.shields.io/nuget/v/SiddiqSoft.RWLEnvelope)
 ![](https://img.shields.io/github/v/tag/SiddiqSoft/RWLEnvelope)
