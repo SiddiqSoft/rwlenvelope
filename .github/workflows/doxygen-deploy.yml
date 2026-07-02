@@ -10,7 +10,9 @@ on:
       - release/*
     paths:
       - 'include/**'
+      - 'API.md'
       - '.github/workflows/doxygen-deploy.yml'
+      - 'Doxyfile'
   pull_request:
     branches:
       - main
@@ -20,6 +22,7 @@ on:
       - release/*
     paths:
       - 'include/**'
+      - 'API.md'
   workflow_dispatch:
 
 permissions:
@@ -45,6 +48,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Clone Doxygen Awesome theme
+        run: |
+          git clone https://github.com/jothepro/doxygen-awesome-css.git doxygen-awesome-css
+
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -52,6 +59,12 @@ jobs:
 
       - name: Generate Doxygen documentation
         run: doxygen Doxyfile
+
+      - name: Copy Doxygen Awesome CSS to docs
+        run: |
+          cp doxygen-awesome-css/doxygen-awesome.css docs/html/
+          cp doxygen-awesome-css/doxygen-awesome-sidebar-only.css docs/html/
+          cp doxygen-awesome-css/doxygen-awesome-sidebar-only-darkmode-toggle.css docs/html/ || true
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
