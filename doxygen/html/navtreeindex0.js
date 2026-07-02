@@ -1,0 +1,26 @@
+var NAVTREEINDEX0 =
+{
+"RWLEnvelope_8hpp.html":[2,0,0,0,0,0,0,0,0,0],
+"RWLEnvelope_8hpp_source.html":[2,0,0,0,0,0,0,0,0,0],
+"_2opt_2azure-agent_2_work_215_2s_2include_2siddiqsoft_2RWLEnvelope_8hpp-example.html":[3,0],
+"annotated.html":[1,0],
+"classes.html":[1,1],
+"classsiddiqsoft_1_1RWLEnvelope.html":[1,0,0,0],
+"classsiddiqsoft_1_1RWLEnvelope.html#aa2b4b6a2d629826612c8fd9e8ecbfce0":[1,0,0,0,0],
+"concepts.html":[0],
+"conceptsiddiqsoft_1_1MutateCallbackNoexcept.html":[0,0,1],
+"conceptsiddiqsoft_1_1ObserveCallbackNoexcept.html":[0,0,0],
+"dir_0e0c7f74996c352d291cdcf1df840c0a.html":[2,0,0,0,0,0,0,0],
+"dir_195bf0f872610a97d8e514ecf9517269.html":[2,0,0,0,0,0,0],
+"dir_4a7836fb781af363a93f0a089ecb970f.html":[2,0,0,0,0],
+"dir_a5c23e4d4d2f2652fc21caa9afd4c5c7.html":[2,0,0],
+"dir_b33801d53851971337cf6ced724b7e59.html":[2,0,0,0,0,0,0,0,0],
+"dir_c8d8a931b90ba90dc17a422b85a5a5fb.html":[2,0,0,0],
+"dir_eac23b5342f2ccc18afc00eb0f7b222e.html":[2,0,0,0,0,0],
+"examples.html":[3],
+"files.html":[2,0],
+"functions.html":[1,2,0],
+"functions_func.html":[1,2,1],
+"index.html":[],
+"pages.html":[]
+};
