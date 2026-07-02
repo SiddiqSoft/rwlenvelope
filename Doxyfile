@@ -58,12 +58,12 @@ FULL_PATH_NAMES        = NO
 
 # If the STRIP_FROM_PATH tag is not specified, the files are displayed with full
 # path.
-STRIP_FROM_PATH        = /Users/maas/source/repos/siddiqsoft/asynchrony/
+STRIP_FROM_PATH        = /Users/maas/source/repos/siddiqsoft/RWLEnvelope/
 
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of
 # the path mentioned in the documentation of a class, which tells
 # the reader which header file to include in order to use a class.
-STRIP_FROM_INC_PATH    = /Users/maas/source/repos/siddiqsoft/asynchrony/include/
+STRIP_FROM_INC_PATH    = /Users/maas/source/repos/siddiqsoft/RWLEnvelope/include/
 
 # If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter
 # (but still unique) names for the generated HTML files.
@@ -355,7 +355,7 @@ USE_MDFILE_AS_MAINPAGE = YES
 
 # The MAINPAGE_NAME tag can be used to specify the name of the markdown file
 # that is used as the main page of the documentation.
-MAINPAGE_NAME          = README
+MAINPAGE_NAME          = API
 
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing
