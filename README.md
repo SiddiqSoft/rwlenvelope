@@ -8,276 +8,152 @@ RWLEnvelope : A simple read-writer lock envelope
 ![](https://img.shields.io/azure-devops/tests/siddiqsoft/siddiqsoft/7)
 ![](https://img.shields.io/azure-devops/coverage/siddiqsoft/siddiqsoft/7)
 
-## Objective
+## Quick Start
 
-**RWLEnvelope** is a header-only C++ template library that provides a simple, convenient envelope-access model for thread-safe access to objects using reader-writer locks. Our goal is to:
-
-- **Avoid re-implementing the rw-lock**: The standard C++ library (since C++14) provides excellent reader-writer lock implementations via [`std::shared_mutex`](https://en.cppreference.com/w/cpp/thread/shared_mutex), [`std::unique_lock`](https://en.cppreference.com/w/cpp/thread/unique_lock), and [`std::shared_lock`](https://en.cppreference.com/w/cpp/thread/shared_lock).
-
-- **Simplify thread-safe access patterns**: We provide a convenient layer that makes it easy to work with shared data in multi-threaded applications without exposing the complexity of manual lock management.
-
-- **Enable safe concurrent access**: Support multiple concurrent readers while ensuring exclusive access for writers, with automatic lock management and RAII semantics.
-
-- **Minimize boilerplate code**: Reduce the amount of locking code needed to safely access shared objects through intuitive APIs.
-
-<p align="right" width="50%">
-<b>WE DO NOT IMPLEMENT</b> a read-writer lock; the standard C++ library has one.<br/>We provide a header-only package simplifying the locking code around thread-safe access to your underlying type.
-<br/>
-<i>NOT a wrapper; an envelope.</i>
-</p>
-
-## Why RWLEnvelope?
-
-### The Problem with Manual Lock Management
-
-Writing thread-safe code is tedious. Without RWLEnvelope, you'd need to:
+**RWLEnvelope** is a header-only C++ template library that provides a simple, convenient envelope-access model for thread-safe access to objects using reader-writer locks.
 
 ```cpp
-// Without RWLEnvelope - verbose
-std::shared_mutex          mutex;
-std::map<std::string, int> data;
+#include "siddiqsoft/RWLEnvelope.hpp"
 
-// Reading
-{
-    std::shared_lock lock(mutex);
-    auto it = data.find("key");
-    if (it != data.end()) {
-        std::cout << it->second << std::endl;
-    }
-} // Lock released here
-
-// Writing
-{
-    std::unique_lock lock(mutex);
-    data["key"] = 42;
-} // Lock released here
-```
-
-### The RWLEnvelope Solution
-
-With RWLEnvelope, the same code becomes cleaner:
-
-```cpp
-// With RWLEnvelope - clean and safe
 siddiqsoft::RWLEnvelope<std::map<std::string, int>> data;
 
-// Reading
+// Read-only access
 data.observe([](const auto& m) noexcept {
-    auto it = m.find("key");
-    if (it != m.end()) {
-        std::cout << it->second << std::endl;
-    }
+    return m.find("key") != m.end();
 });
 
-// Writing
+// Read-write access
 data.mutate([](auto& m) noexcept {
     m["key"] = 42;
 });
 ```
 
-### Key Benefits
+## Why RWLEnvelope?
 
-1. **Automatic Lock Management**: Locks are acquired and released automatically via RAII. No risk of forgetting to unlock.
+- **Automatic Lock Management**: No manual lock/unlock needed
+- **Clear Intent**: `observe()` for reads, `mutate()` for writes
+- **Exception Safe**: Locks released properly even if callbacks throw
+- **Zero Overhead**: Header-only, no runtime cost beyond std::shared_mutex
+- **Works with Any Type**: Not limited to specific containers
 
-2. **Clear Intent**: `observe()` for reads and `mutate()` for writes makes your code's intent explicit and self-documenting.
+## Documentation
 
-3. **Reduced Boilerplate**: No need to manually create lock objects or manage scopes. The library handles it.
+**📖 [Complete API Documentation](https://siddiqsoft.github.io/rwlenvelope/)**
 
-4. **Type Safety**: The template enforces that you're working with the correct type. No accidental type mismatches.
+The full documentation includes:
+- Detailed API reference
+- Usage patterns and examples
+- Performance considerations
+- Thread safety guarantees
+- Requirements and limitations
 
-5. **Exception Safe**: If your callback throws, the lock is still released properly. No deadlocks or resource leaks.
+## Installation
 
-6. **Flexible Access Patterns**: Choose between callback-based access (for simple operations) or direct lock access (for complex operations).
+### NuGet Package
+```
+Install-Package SiddiqSoft.RWLEnvelope
+```
 
-7. **Zero Overhead**: Header-only implementation with no runtime overhead beyond the standard library's mutex.
+### Header-Only
+Copy `include/siddiqsoft/RWLEnvelope.hpp` to your project.
 
-8. **Works with Any Type**: Not limited to JSON or maps. Works with any type that supports move semantics.
+## Requirements
 
-### Real-World Scenarios
+- **C++ Standard**: C++20 or later (requires C++20 concepts support)
+- **Compiler**: Must support `[[nodiscard]]` attribute and C++20 concepts
+- **Headers**: `<shared_mutex>`, `<functional>`, `<tuple>`, `<utility>`, `<concepts>`
+- **Optional**: nlohmann/json library for JSON serialization support
 
-**Configuration Management**:
+## Key Features
+
+### Multiple Concurrent Readers
+```cpp
+// Multiple threads can read simultaneously
+data.observe([](const auto& m) noexcept {
+    return m.at("key");
+});
+```
+
+### Exclusive Writer
+```cpp
+// Only one thread can write at a time
+data.mutate([](auto& m) noexcept {
+    m["key"] = 42;
+});
+```
+
+### Direct Lock Access
+```cpp
+// For complex operations
+if (auto [map, lock] = data.writeLock(); lock) {
+    map["key"] = 42;
+    map.erase("old_key");
+}
+```
+
+### Snapshot for External Processing
+```cpp
+// Get a copy to process outside the lock
+std::vector<int> copy = data.snapshot();
+std::sort(copy.begin(), copy.end());
+```
+
+## Real-World Examples
+
+### Configuration Management
 ```cpp
 siddiqsoft::RWLEnvelope<AppConfig> config;
 
 // Multiple threads reading config
-auto myDatabaseUrl = config.observe([](const auto& cfg) noexcept {
-    // GET - returns a copy of the value.
-    return cfg.getDatabaseUrl();
+auto url = config.observe([](const auto& cfg) noexcept {
+    return cfg.databaseUrl;
 });
 
 // Single thread updating config
-config.mutate([](auto& cfg, std::string& newURL) noexcept {
-    cfg.setDatabaseUrl(newURL);
-    },
-    "new_url");
+config.mutate([](auto& cfg) noexcept {
+    cfg.databaseUrl = "new_url";
+});
 ```
 
-Note we could have used lambda captures but it is preferred to use extra arguments into the callback to resolve r-value and forward parameters into the underlying object.
-
-**Cache Implementation**:
+### Cache Implementation
 ```cpp
 siddiqsoft::RWLEnvelope<std::unordered_map<std::string, CacheEntry>> cache;
 
 // Fast concurrent reads
 auto val = cache.observe([](const auto& c) noexcept {
-    return c.at("key");
+    return c.at("key").value;
 });
 
 // Exclusive writes
 cache.mutate([](auto& c) noexcept {
-    c["key"] = computeValue();
+    c["key"] = {"computed_value", now()};
 });
 ```
 
-The motivation is to allow this helper class to handle the locking and contain your in-lock logic restricted to the *ideally small/short* code within the lambda (or callable).
+## Testing
 
-**Shared State in Services**:
-```cpp
-siddiqsoft::RWLEnvelope<ServiceState> state;
+The library includes comprehensive test coverage with 38+ tests covering:
+- Basic functionality (observe, mutate, readLock, writeLock)
+- Edge cases and exception safety
+- Concurrent access patterns
+- Data integrity under contention
 
-// Multiple reader threads
-auto healthCheck = state.observe([](const auto& s) noexcept {
-    return s.isHealthy();
-});
-
-// Single writer thread
-// Passing the myMetrics as argument to the callback
-state.mutate([](auto& s, std::map<std::string,std::string>& metrics) noexcept {
-    s.updateMetrics( metrics );
-    },
-    myMetrics);
-
-// And if we're using lambda capture...
-state.mutate([&myMetrics](auto& s) noexcept {
-    s.updateMetrics( myMetrics );
-    });
-```
-
-
-# API Documentation
-
-For comprehensive API documentation, including detailed descriptions of all methods, usage patterns, and examples, see [**docs/README.md**](docs/README.md).
-
-# Requirements
-- You must be able to use [`<shared_mutex>`](https://en.cppreference.com/w/cpp/thread/shared_mutex) and [`<mutex>`](https://en.cppreference.com/w/cpp/thread/mutex).
-- Minimal target is `C++20` (requires C++20 concepts support).
-- The build and tests are for MacOS (arm64), Linux (Clang, GCC) and Visual Studio 2019 under arm64 and x64. 
-- We use [`nlohmann::json`](https://github.com/nlohmann/json) only in our tests and the library is aware to provide a conversion operator if library is detected.
-
-# Usage
-
-- Use the nuget [SiddiqSoft.RWLEnvelope](https://www.nuget.org/packages/SiddiqSoft.RWLEnvelope/)
-- The idea is to not "wrap" the underlying type forcing you to either inherit or re-implement the types but to take advantage of the underlying type's interface whilst ensuring that we have the necessary locks.
-- Two methods:
-  - Observer/mutator model with callback and custom return to limit access and to focus the where and how to access the underlying type.
-  - Take advantage of [init-statement in if-statement](https://en.cppreference.com/w/cpp/language/if) to get the contained object within a lock and have the compiler auto-release once we leave scope.
-- A sample implementation (say you want a std::map with reader-writer lock)
-  - `using RWLMap = siddiqsoft::RWLEnvelope<std::map>;`
-
-
-```cpp
-#include "gtest/gtest.h"
-#include "nlohmann/json.hpp"
-#include "siddiqsoft/RWLEnvelope.hpp"
-
-
-TEST(examples, AssignWithCallbacks)
-{
-	siddiqsoft::RWLEnvelope<nlohmann::json> docl; // we will assign later
-	nlohmann::json                          doc2 {{"baa", 0x0baa}, {"fee", 0x0fee}, {"bee", 0x0bee}};
-
-	// Move assign here post init
-	docl.reassign(std::move(doc2));
-	// Must be empty since we moved it into the envelope
-	EXPECT_TRUE(doc2.empty());
-
-	// Check we have pre-change value.. Note that here we return a boolean to avoid data copy
-	EXPECT_TRUE(docl.observe([](const auto& doc) noexcept {
-		return (doc.value("fee", 0xfa17) == 0x0fee) && (doc.value("baa", 0xfa17) == 0x0baa) && (doc.value("bee", 0xfa17) == 0x0bee);
-	}));
-
-	EXPECT_EQ(3, docl.observe([](const auto& doc) noexcept { return doc.size(); }));
-}
-
-
-TEST(examples, AssignWithDirectLocks)
-{
-	siddiqsoft::RWLEnvelope<nlohmann::json> docl({{"foo", "bar"}, {"few", "lar"}});
-	nlohmann::json                          doc2 {{"baa", 0x0baa}, {"fee", 0x0fee}, {"bee", 0x0bee}};
-
-	// Previous document has two items..
-	if (auto const& [doc, rl] = docl.readLock(); rl) { EXPECT_EQ(2, doc.size()); }
-
-	// Modify the item (replace the initial with new)
-	if (auto [doc, wl] = docl.writeLock(); wl) { doc = std::move(doc2); };
-
-	//doc2 -> Must be empty since we moved it into the envelope
-	EXPECT_TRUE(doc2.empty());
-
-	// Check we have post-change value..
-	if (const auto& [doc, rl] = docl.readLock(); rl) { EXPECT_EQ(3, doc.size()); }
-}
-```
-
-Additional [examples](tests/examples.cpp).
-
-<details>
-<summary>
-
-# Test Coverage
-
-</summary>
-The library includes comprehensive test coverage with **38 comprehensive tests** across multiple categories:
-
-## Basic Functionality Tests
-
-- **Simple Operations**: Basic envelope creation and mutation
-- **Callback-Based Access**: Testing `observe()` and `mutate()` methods with various return types
-- **Direct Lock Access**: Testing `readLock()` and `writeLock()` with structured bindings
-- **Reassignment**: Testing `reassign()` method for replacing envelope contents
-- **Snapshot Operations**: Testing `snapshot()` for independent copies
-- **Move Semantics**: Testing move constructors and move assignment
-
-## Edge Case Tests
-
-- **Default Construction**: Envelopes with default-constructed objects
-- **Return Value Forwarding**: Callbacks returning various types (void, int, string, bool, size_t)
-- **Non-JSON Types**: Testing with `std::vector<int>`, `std::string`, and other types
-- **Move Constructor Behavior**: Verifying source envelope state after move operations
-- **RWA Counter Tracking**: Validating the read-write-action counter accuracy
-- **Exception Safety**: Testing behavior when callbacks throw exceptions
-- **Independent Snapshots**: Verifying snapshots are truly independent copies
-- **Multiple Reassignments**: Testing repeated reassignment operations
-
-## Concurrency & Stress Tests
-
-### Reader-Writer Contention
-- **Two-Thread Tests**: Concurrent readers and writers with callbacks and direct locks
-- **Monotonic Counter Integrity**: Verifying counter never goes backwards under concurrent access
-- **Snapshot Consistency**: Ensuring snapshots return internally consistent state
-- **Concurrent Reassign**: Testing reassign racing with observe and snapshot operations
-
-### High-Contention Scenarios
-- **Zero-Sleep Maximum Contention**: All threads hammer the lock without delays
-- **Mixed API Concurrency**: All 5 API methods used concurrently on the same envelope
-- **Shared Read Lock Concurrency**: Multiple readers accessing simultaneously without blocking
-- **Concurrent Observe with Return**: Readers returning values under write contention
-
-### Data Integrity Verification
-- **RWA Counter Accuracy**: Verifying mutation counter matches exact mutate() count
-- **Paired Field Consistency**: Ensuring related fields remain synchronized
-- **Version-Data Pairing**: Validating version and data fields stay in sync during reassignment
-
-## Running Tests
-
-Tests are built using Google Test (gtest) and can be run via the CMake build system:
-
+Run tests:
 ```bash
 cmake --preset Apple-Debug
 cmake --build --preset Apple-Debug
 ctest --preset Apple-Debug
 ```
-</details>
+
+## License
+
+BSD 3-Clause License - See LICENSE file for details
+
+## Resources
+
+- **[Full API Documentation](https://siddiqsoft.github.io/rwlenvelope/)** - Complete reference and examples
+- **[GitHub Repository](https://github.com/SiddiqSoft/RWLEnvelope)** - Source code and issues
+- **[C++ std::shared_mutex](https://en.cppreference.com/w/cpp/thread/shared_mutex)** - Standard library reference
 
 <small align="right">
 
