@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['usage_20patterns_0',['Usage Patterns',['../classsiddiqsoft_1_1RWLEnvelope.html#usage_patterns',1,'']]]
+  ['only_0',['Header-Only',['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md4',1,'']]]
 ];

@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['limitations_0',['Limitations',['../classsiddiqsoft_1_1RWLEnvelope.html#limitations',1,'']]],
-  ['lock_20access_1',['Direct Lock Access',['../classsiddiqsoft_1_1RWLEnvelope.html#pattern_lock',1,'']]]
+  ['header_20only_0',['Header-Only',['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md4',1,'']]]
 ];

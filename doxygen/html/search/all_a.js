@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['patterns_0',['Usage Patterns',['../classsiddiqsoft_1_1RWLEnvelope.html#usage_patterns',1,'']]],
-  ['performance_20considerations_1',['Performance Considerations',['../classsiddiqsoft_1_1RWLEnvelope.html#performance',1,'']]],
-  ['processing_2',['Snapshot for External Processing',['../classsiddiqsoft_1_1RWLEnvelope.html#pattern_snapshot',1,'']]]
+  ['license_0',['License',['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md15',1,'']]],
+  ['limitations_1',['Limitations',['../classsiddiqsoft_1_1RWLEnvelope.html#limitations',1,'']]],
+  ['lock_20access_2',['Lock Access',['../classsiddiqsoft_1_1RWLEnvelope.html#pattern_lock',1,'Direct Lock Access'],['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md9',1,'Direct Lock Access']]]
 ];

@@ -4,6 +4,5 @@ var searchData=
   ['real_20world_20examples_1',['Real-World Examples',['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md11',1,'']]],
   ['requirements_2',['Requirements',['../RWLEnvelope_8hpp.html#requirements',1,'Requirements'],['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md5',1,'Requirements']]],
   ['resources_3',['Resources',['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md16',1,'']]],
-  ['rwlenvelope_4',['RWLEnvelope',['../classsiddiqsoft_1_1RWLEnvelope.html',1,'siddiqsoft::RWLEnvelope&lt; ContainerType &gt;'],['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md1',1,'Why RWLEnvelope?']]],
-  ['rwlenvelope_2ehpp_5',['RWLEnvelope.hpp',['../RWLEnvelope_8hpp.html',1,'']]]
+  ['rwlenvelope_4',['Why RWLEnvelope?',['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md1',1,'']]]
 ];

@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['observecallbacknoexcept_0',['ObserveCallbackNoexcept',['../conceptsiddiqsoft_1_1ObserveCallbackNoexcept.html',1,'siddiqsoft']]],
-  ['operator_3d_1',['operator=',['../classsiddiqsoft_1_1RWLEnvelope.html#aa2b4b6a2d629826612c8fd9e8ecbfce0',1,'siddiqsoft::RWLEnvelope']]]
+  ['key_20features_0',['Key Features',['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md6',1,'']]]
 ];

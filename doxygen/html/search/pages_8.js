@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['patterns_0',['Usage Patterns',['../classsiddiqsoft_1_1RWLEnvelope.html#usage_patterns',1,'']]],
-  ['performance_20considerations_1',['Performance Considerations',['../classsiddiqsoft_1_1RWLEnvelope.html#performance',1,'']]],
-  ['processing_2',['Snapshot for External Processing',['../classsiddiqsoft_1_1RWLEnvelope.html#pattern_snapshot',1,'']]]
+  ['implementation_0',['Cache Implementation',['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md13',1,'']]],
+  ['installation_1',['Installation',['../dir_8733a5933eaad8d661a362d1c8edb4ba.html#autotoc_md2',1,'']]]
 ];
