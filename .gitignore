@@ -380,3 +380,4 @@ build/**
 /test/validation_tests/test.nativecodeanalysis.xml
 *.filters
 doxygen-awesome-css/
+docs/doxygen/**
