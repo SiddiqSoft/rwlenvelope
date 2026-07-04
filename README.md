@@ -15,18 +15,29 @@ RWLEnvelope : A simple read-writer lock envelope
 ```cpp
 #include "siddiqsoft/RWLEnvelope.hpp"
 
-siddiqsoft::RWLEnvelope<std::map<std::string, int>> data;
+// Declare a map as container and initialize it with some values
+// Using initializer list constructor for convenient initialization.
+Note the brace-count as we use brace initializer to construct the RWLEnvelope
+// while constructing its internal storage with the std::map initializer!
+siddiqsoft::RWLEnvelope<std::map<std::string, int>> data({
+    {"key", 1010},
+    {"key2", 2020},
+    {"key3", 3030}
+});
 
 // Read-only access
-data.observe([](const auto& m) noexcept {
-    return m.find("key") != m.end();
+auto val = data.observe([](const auto& m) noexcept -> auto {
+    return m.value("key", 0);
 });
 
 // Read-write access
 data.mutate([](auto& m) noexcept {
     m["key"] = 42;
 });
+
+std::println(std::cerr, "Contents: {}", data.snapshot());
 ```
+
 
 ## Why RWLEnvelope?
 
@@ -35,6 +46,7 @@ data.mutate([](auto& m) noexcept {
 - **Exception Safe**: Locks released properly even if callbacks throw
 - **Zero Overhead**: Header-only, no runtime cost beyond std::shared_mutex
 - **Works with Any Type**: Not limited to specific containers
+- **Convenient Initialization**: Supports initializer lists for easy construction
 
 ## Documentation
 
@@ -98,6 +110,26 @@ std::vector<int> copy = data.snapshot();
 std::sort(copy.begin(), copy.end());
 ```
 
+### Initializer List Construction
+```cpp
+// Construct with initializer list - works with any container supporting std::initializer_list
+siddiqsoft::RWLEnvelope<std::vector<int>> vec({1, 2, 3, 4, 5});
+
+// Maps and other associative containers
+siddiqsoft::RWLEnvelope<std::map<std::string, int>> map({
+    {"key1", 1},
+    {"key2", 2},
+    {"key3", 3}
+});
+
+// JSON objects
+siddiqsoft::RWLEnvelope<nlohmann::json> doc({
+    {"name", "John"},
+    {"age", 30},
+    {"active", true}
+});
+```
+
 ## Real-World Examples
 
 ### Configuration Management
@@ -130,10 +162,27 @@ cache.mutate([](auto& c) noexcept {
 });
 ```
 
+### Initializing with Data
+```cpp
+// Initialize a cache with pre-populated data
+siddiqsoft::RWLEnvelope<std::map<std::string, std::string>> cache({
+    {"user:1", "Alice"},
+    {"user:2", "Bob"},
+    {"user:3", "Charlie"}
+});
+
+// Initialize a JSON document with structured data
+siddiqsoft::RWLEnvelope<nlohmann::json> config({
+    {"database", {{"host", "localhost"}, {"port", 5432}}},
+    {"cache", {{"ttl", 3600}, {"enabled", true}}}
+});
+```
+
 ## Testing
 
 The library includes comprehensive test coverage with 38+ tests covering:
 - Basic functionality (observe, mutate, readLock, writeLock)
+- Initializer list construction
 - Edge cases and exception safety
 - Concurrent access patterns
 - Data integrity under contention

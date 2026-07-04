@@ -271,11 +271,35 @@ namespace siddiqsoft
 		/// // data is now empty
 		/// @endcode
 		explicit RWLEnvelope(ContainerType&& src)
+				: _item(std::move(src))
 		{
-			_item = std::move(src);
+			//_item = std::move(src);
 		}
 
 
+		/// @brief Constructor from initializer list
+		/// @tparam T The type of elements in the initializer list
+		/// @param init The initializer list to construct the ContainerType with
+		/// @details
+		/// Creates an envelope by constructing the ContainerType from an initializer list.
+		/// This allows convenient initialization using brace-enclosed initializer syntax.
+		/// @note Requires ContainerType to be constructible from std::initializer_list<T>
+		/// @see RWLEnvelope(ContainerType&&), RWLEnvelope(const ContainerType&)
+		/// @example
+		/// @code
+		/// siddiqsoft::RWLEnvelope<std::vector<int>> vec({1, 2, 3, 4, 5});
+		/// siddiqsoft::RWLEnvelope<std::map<std::string, int>> map({
+		///     {"key1", 1},
+		///     {"key2", 2}
+		/// });
+		/// @endcode
+		template<typename T>
+		explicit RWLEnvelope(std::initializer_list<T> init)
+		{
+			_item = ContainerType(init);
+		}
+
+		
 		/// @brief Replace the enclosed object with a new one
 		/// @param src The new object to move into the envelope
 		/// @details
