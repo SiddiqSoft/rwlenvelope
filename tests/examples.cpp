@@ -24,6 +24,29 @@ TEST(examples, WithCallbacks)
 }
 
 
+TEST(examples, ConstructWithInitializers)
+{
+	using CustomMapType = std::map<std::string, int>;
+	// Delcare a map as container and initialize it with some values..
+	siddiqsoft::RWLEnvelope<CustomMapType> data{{{"key", 1010}, {"key2", 2020}, {"key3", 3030}}};
+
+	// Read-only access
+	auto val = data.observe([](const auto& m) noexcept { return m.at("key"); });
+
+	// Read-write access
+	data.mutate([](auto& m) noexcept { m["key"] = 42; });
+
+	std::println(std::cerr, "Contents: {}", data.snapshot());
+}
+
+TEST(examples, ConstructWithInitializers2)
+{
+	siddiqsoft::RWLEnvelope<nlohmann::json> docl({{"foo", "bar"}, {"few", "lar"}});
+
+	// Check we have pre-change value..
+	EXPECT_EQ("bar", docl.observe([](const auto& doc) noexcept { return doc.value("foo", ""); }));
+}
+
 TEST(examples, WithDirectLocks)
 {
 	siddiqsoft::RWLEnvelope<nlohmann::json> docl({{"foo", "bar"}, {"few", "lar"}});

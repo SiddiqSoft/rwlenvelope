@@ -54,7 +54,6 @@
 		<file src="..\include\siddiqsoft\*.hpp" target="build\native\include\siddiqsoft\" />
 		<file src="Siddiq-Software-Avatar.png" target="docs\" />
 		<file src="..\README.md" target="docs\" />
-		<file src="..\API.md" target="docs\" />
 
 		<!-- MSBuild .targets files and debugger visualizers -->
 		<file src="SiddiqSoft.RWLEnvelope.targets" target="build\native" />

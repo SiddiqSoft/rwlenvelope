@@ -1,0 +1,20 @@
+# GitHub Pages Configuration
+remote_theme: pages-themes/primer@v0.6.0
+plugins:
+- jekyll-remote-theme
+
+# Site metadata
+title: RWLEnvelope
+description: Thread-safe envelope wrapper using reader-writer locks
+url: https://siddiqsoft.github.io/rwlenvelope
+
+# Logo and branding
+logo: https://gravatar.com/avatar/b22603b65d11dcab44885c65e44f7dc9
+author:
+  name: Siddiq Software LLC
+  email: github@siddiqsoft.com
+  gravatar: https://gravatar.com/siddiqsoft
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
