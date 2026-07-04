@@ -62,7 +62,7 @@ parameters:
   
   - name: Platforms
     type: stringList
-    default: [ Linux ]
+    default: [ Linux, Windows ]
     values: [ Windows, Linux, Darwin ]
     displayName: "Platforms to build (Windows, Linux)"
   
@@ -75,7 +75,7 @@ parameters:
 
   - name: Compilers_Linux
     type: stringList
-    default: [ Clang ]
+    default: [ Clang, GCC ]
     values: [ Clang, GCC ]
     displayName: "Linux compilers to build (Clang, GCC)"
 
