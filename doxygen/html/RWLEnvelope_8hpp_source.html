@@ -18,6 +18,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -217,89 +218,97 @@ $(function(){initNavTree('RWLEnvelope_8hpp_source.html','',''); });
 <div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span> </div>
 <div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span></div>
 <div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>        <span class="keyword">explicit</span> RWLEnvelope(ContainerType&amp;&amp; src)</div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>        {</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>            _item = std::move(src);</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>        }</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span> </div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span></div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>        <span class="keywordtype">void</span> reassign(ContainerType&amp;&amp; src)</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>        {</div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>            RWLock myWriterLock(_sMutex);</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>            _item = std::move(src);</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>        }</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span> </div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span></div>
-<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>        <span class="keyword">explicit</span> RWLEnvelope(<span class="keyword">const</span> ContainerType&amp; arg)</div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>        {</div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>            RWLock myWriterLock(_sMutex);</div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>            _item = arg;</div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>        }</div>
-<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span> </div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span></div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno"><a class="line" href="classsiddiqsoft_1_1RWLEnvelope.html#aa2b4b6a2d629826612c8fd9e8ecbfce0">  326</a></span>        RWLEnvelope&amp; <a class="code hl_function" href="classsiddiqsoft_1_1RWLEnvelope.html#aa2b4b6a2d629826612c8fd9e8ecbfce0">operator=</a>(RWLEnvelope <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span> </div>
-<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span></div>
-<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Callback, <span class="keyword">typename</span>... Args&gt;</div>
-<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>            <span class="keyword">requires</span> <a class="code hl_concept" href="conceptsiddiqsoft_1_1ObserveCallbackNoexcept.html">ObserveCallbackNoexcept</a>&lt;ContainerType, Callback, Args...&gt;</div>
-<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>        <span class="keyword">auto</span> observe(Callback cbf, Args&amp;&amp;... args)<span class="keyword"> const</span></div>
-<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span><span class="keyword">        </span>{</div>
-<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>            RLock myLock(_sMutex);</div>
-<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>            <span class="keywordflow">return</span> cbf(_item, std::forward&lt;Args&gt;(args)...);</div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>        }</div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span> </div>
-<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span></div>
-<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>        <span class="comment">// NOLINTBEGIN(clang-diagnostic-return-type)</span></div>
-<div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span>        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Callback, <span class="keyword">typename</span>... Args&gt;</div>
-<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span>            <span class="keyword">requires</span> <a class="code hl_concept" href="conceptsiddiqsoft_1_1MutateCallbackNoexcept.html">MutateCallbackNoexcept</a>&lt;ContainerType, Callback, Args...&gt;</div>
-<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>        <span class="keyword">auto</span> mutate(Callback cbf, Args&amp;&amp;... args)</div>
-<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span>        {</div>
-<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>            RWLock myWriterLock(_sMutex);</div>
-<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>            rone   d(_rwa); <span class="comment">// we increment the housekeeping counter on each callback</span></div>
-<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span> </div>
-<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>            <span class="keywordflow">try</span></div>
-<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span>            {</div>
-<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>                <span class="keywordflow">return</span> cbf(_item, std::forward&lt;Args&gt;(args)...);</div>
-<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>            }</div>
-<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>            <span class="keywordflow">catch</span> (...)</div>
-<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>            {</div>
-<div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>            }</div>
-<div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>        }</div>
-<div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span>        <span class="comment">// NOLINTEND(clang-diagnostic-return-type)</span></div>
-<div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span> </div>
-<div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span></div>
-<div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span>        [[nodiscard]] ContainerType snapshot()<span class="keyword"> const</span></div>
-<div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span><span class="keyword">        </span>{</div>
-<div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span>            RLock myLock(_sMutex);</div>
-<div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span>            <span class="keywordflow">return</span> _item;</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>                : _item(std::move(src))</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>        {</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>            <span class="comment">//_item = std::move(src);</span></div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>        }</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span></div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>        <span class="keyword">explicit</span> RWLEnvelope(std::initializer_list&lt;T&gt; init)</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>        {</div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>            _item = ContainerType(init);</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>        }</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span> </div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>        </div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>        <span class="keywordtype">void</span> reassign(ContainerType&amp;&amp; src)</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>        {</div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>            RWLock myWriterLock(_sMutex);</div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>            _item = std::move(src);</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>        }</div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span> </div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span></div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>        <span class="keyword">explicit</span> RWLEnvelope(<span class="keyword">const</span> ContainerType&amp; arg)</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>        {</div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>            RWLock myWriterLock(_sMutex);</div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>            _item = arg;</div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>        }</div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span> </div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span></div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno"><a class="line" href="classsiddiqsoft_1_1RWLEnvelope.html#aa2b4b6a2d629826612c8fd9e8ecbfce0">  350</a></span>        RWLEnvelope&amp; <a class="code hl_function" href="classsiddiqsoft_1_1RWLEnvelope.html#aa2b4b6a2d629826612c8fd9e8ecbfce0">operator=</a>(RWLEnvelope <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span> </div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span></div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Callback, <span class="keyword">typename</span>... Args&gt;</div>
+<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>            <span class="keyword">requires</span> <a class="code hl_concept" href="conceptsiddiqsoft_1_1ObserveCallbackNoexcept.html">ObserveCallbackNoexcept</a>&lt;ContainerType, Callback, Args...&gt;</div>
+<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>        <span class="keyword">auto</span> observe(Callback cbf, Args&amp;&amp;... args)<span class="keyword"> const</span></div>
+<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span><span class="keyword">        </span>{</div>
+<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>            RLock myLock(_sMutex);</div>
+<div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>            <span class="keywordflow">return</span> cbf(_item, std::forward&lt;Args&gt;(args)...);</div>
+<div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span>        }</div>
+<div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span> </div>
+<div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span></div>
+<div class="line"><a id="l00412" name="l00412"></a><span class="lineno">  412</span>        <span class="comment">// NOLINTBEGIN(clang-diagnostic-return-type)</span></div>
+<div class="line"><a id="l00413" name="l00413"></a><span class="lineno">  413</span>        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Callback, <span class="keyword">typename</span>... Args&gt;</div>
+<div class="line"><a id="l00414" name="l00414"></a><span class="lineno">  414</span>            <span class="keyword">requires</span> <a class="code hl_concept" href="conceptsiddiqsoft_1_1MutateCallbackNoexcept.html">MutateCallbackNoexcept</a>&lt;ContainerType, Callback, Args...&gt;</div>
+<div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span>        <span class="keyword">auto</span> mutate(Callback cbf, Args&amp;&amp;... args)</div>
+<div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span>        {</div>
+<div class="line"><a id="l00417" name="l00417"></a><span class="lineno">  417</span>            RWLock myWriterLock(_sMutex);</div>
+<div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span>            rone   d(_rwa); <span class="comment">// we increment the housekeeping counter on each callback</span></div>
+<div class="line"><a id="l00419" name="l00419"></a><span class="lineno">  419</span> </div>
+<div class="line"><a id="l00420" name="l00420"></a><span class="lineno">  420</span>            <span class="keywordflow">try</span></div>
+<div class="line"><a id="l00421" name="l00421"></a><span class="lineno">  421</span>            {</div>
+<div class="line"><a id="l00422" name="l00422"></a><span class="lineno">  422</span>                <span class="keywordflow">return</span> cbf(_item, std::forward&lt;Args&gt;(args)...);</div>
+<div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span>            }</div>
+<div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span>            <span class="keywordflow">catch</span> (...)</div>
+<div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span>            {</div>
+<div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span>            }</div>
 <div class="line"><a id="l00427" name="l00427"></a><span class="lineno">  427</span>        }</div>
-<div class="line"><a id="l00428" name="l00428"></a><span class="lineno">  428</span> </div>
-<div class="line"><a id="l00429" name="l00429"></a><span class="lineno">  429</span></div>
-<div class="line"><a id="l00454" name="l00454"></a><span class="lineno">  454</span>        [[nodiscard]] std::tuple&lt;const ContainerType&amp;, RLock&gt; readLock() { <span class="keywordflow">return</span> {std::ref(_item), RLock(_sMutex)}; }</div>
-<div class="line"><a id="l00455" name="l00455"></a><span class="lineno">  455</span> </div>
-<div class="line"><a id="l00456" name="l00456"></a><span class="lineno">  456</span></div>
-<div class="line"><a id="l00479" name="l00479"></a><span class="lineno">  479</span>        [[nodiscard]] std::tuple&lt;ContainerType&amp;, RWLock&gt; writeLock() { <span class="keywordflow">return</span> {std::ref(_item), RWLock(_sMutex)}; }</div>
-<div class="line"><a id="l00480" name="l00480"></a><span class="lineno">  480</span> </div>
-<div class="line"><a id="l00481" name="l00481"></a><span class="lineno">  481</span> </div>
-<div class="line"><a id="l00482" name="l00482"></a><span class="lineno">  482</span><span class="preprocessor">#ifdef INCLUDE_NLOHMANN_JSON_HPP_</span></div>
-<div class="line"><a id="l00502" name="l00502"></a><span class="lineno">  502</span>    <span class="keyword">public</span>:</div>
-<div class="line"><a id="l00503" name="l00503"></a><span class="lineno">  503</span>        <span class="keyword">operator</span> nlohmann::json()<span class="keyword"> const</span></div>
-<div class="line"><a id="l00504" name="l00504"></a><span class="lineno">  504</span><span class="keyword">        </span>{</div>
-<div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span>            RLock myLock(_sMutex);</div>
-<div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span>            <span class="keywordflow">return</span> {{<span class="stringliteral">&quot;storage&quot;</span>, _item}, {<span class="stringliteral">&quot;_typver&quot;</span>, <span class="stringliteral">&quot;RWLEnvelope/1.5.1&quot;</span>}, {<span class="stringliteral">&quot;readWriteActions&quot;</span>, _rwa}};</div>
-<div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>        }</div>
-<div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00509" name="l00509"></a><span class="lineno">  509</span> </div>
-<div class="line"><a id="l00510" name="l00510"></a><span class="lineno">  510</span>    <span class="keyword">private</span>:</div>
-<div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span>        ContainerType _item;</div>
-<div class="line"><a id="l00516" name="l00516"></a><span class="lineno">  516</span></div>
-<div class="line"><a id="l00521" name="l00521"></a><span class="lineno">  521</span>        <span class="keyword">mutable</span> std::shared_mutex _sMutex {};</div>
-<div class="line"><a id="l00522" name="l00522"></a><span class="lineno">  522</span></div>
-<div class="line"><a id="l00531" name="l00531"></a><span class="lineno">  531</span>        uint64_t _rwa {0};</div>
-<div class="line"><a id="l00532" name="l00532"></a><span class="lineno">  532</span>    };</div>
+<div class="line"><a id="l00428" name="l00428"></a><span class="lineno">  428</span>        <span class="comment">// NOLINTEND(clang-diagnostic-return-type)</span></div>
+<div class="line"><a id="l00429" name="l00429"></a><span class="lineno">  429</span> </div>
+<div class="line"><a id="l00430" name="l00430"></a><span class="lineno">  430</span></div>
+<div class="line"><a id="l00447" name="l00447"></a><span class="lineno">  447</span>        [[nodiscard]] ContainerType snapshot()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00448" name="l00448"></a><span class="lineno">  448</span><span class="keyword">        </span>{</div>
+<div class="line"><a id="l00449" name="l00449"></a><span class="lineno">  449</span>            RLock myLock(_sMutex);</div>
+<div class="line"><a id="l00450" name="l00450"></a><span class="lineno">  450</span>            <span class="keywordflow">return</span> _item;</div>
+<div class="line"><a id="l00451" name="l00451"></a><span class="lineno">  451</span>        }</div>
+<div class="line"><a id="l00452" name="l00452"></a><span class="lineno">  452</span> </div>
+<div class="line"><a id="l00453" name="l00453"></a><span class="lineno">  453</span></div>
+<div class="line"><a id="l00478" name="l00478"></a><span class="lineno">  478</span>        [[nodiscard]] std::tuple&lt;const ContainerType&amp;, RLock&gt; readLock() { <span class="keywordflow">return</span> {std::ref(_item), RLock(_sMutex)}; }</div>
+<div class="line"><a id="l00479" name="l00479"></a><span class="lineno">  479</span> </div>
+<div class="line"><a id="l00480" name="l00480"></a><span class="lineno">  480</span></div>
+<div class="line"><a id="l00503" name="l00503"></a><span class="lineno">  503</span>        [[nodiscard]] std::tuple&lt;ContainerType&amp;, RWLock&gt; writeLock() { <span class="keywordflow">return</span> {std::ref(_item), RWLock(_sMutex)}; }</div>
+<div class="line"><a id="l00504" name="l00504"></a><span class="lineno">  504</span> </div>
+<div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span> </div>
+<div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span><span class="preprocessor">#ifdef INCLUDE_NLOHMANN_JSON_HPP_</span></div>
+<div class="line"><a id="l00526" name="l00526"></a><span class="lineno">  526</span>    <span class="keyword">public</span>:</div>
+<div class="line"><a id="l00527" name="l00527"></a><span class="lineno">  527</span>        <span class="keyword">operator</span> nlohmann::json()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00528" name="l00528"></a><span class="lineno">  528</span><span class="keyword">        </span>{</div>
+<div class="line"><a id="l00529" name="l00529"></a><span class="lineno">  529</span>            RLock myLock(_sMutex);</div>
+<div class="line"><a id="l00530" name="l00530"></a><span class="lineno">  530</span>            <span class="keywordflow">return</span> {{<span class="stringliteral">&quot;storage&quot;</span>, _item}, {<span class="stringliteral">&quot;_typver&quot;</span>, <span class="stringliteral">&quot;RWLEnvelope/1.5.1&quot;</span>}, {<span class="stringliteral">&quot;readWriteActions&quot;</span>, _rwa}};</div>
+<div class="line"><a id="l00531" name="l00531"></a><span class="lineno">  531</span>        }</div>
+<div class="line"><a id="l00532" name="l00532"></a><span class="lineno">  532</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00533" name="l00533"></a><span class="lineno">  533</span> </div>
+<div class="line"><a id="l00534" name="l00534"></a><span class="lineno">  534</span>    <span class="keyword">private</span>:</div>
+<div class="line"><a id="l00539" name="l00539"></a><span class="lineno">  539</span>        ContainerType _item;</div>
+<div class="line"><a id="l00540" name="l00540"></a><span class="lineno">  540</span></div>
+<div class="line"><a id="l00545" name="l00545"></a><span class="lineno">  545</span>        <span class="keyword">mutable</span> std::shared_mutex _sMutex {};</div>
+<div class="line"><a id="l00546" name="l00546"></a><span class="lineno">  546</span></div>
+<div class="line"><a id="l00555" name="l00555"></a><span class="lineno">  555</span>        uint64_t _rwa {0};</div>
+<div class="line"><a id="l00556" name="l00556"></a><span class="lineno">  556</span>    };</div>
 </div>
-<div class="line"><a id="l00533" name="l00533"></a><span class="lineno">  533</span>} <span class="comment">// namespace siddiqsoft</span></div>
-<div class="line"><a id="l00534" name="l00534"></a><span class="lineno">  534</span> </div>
-<div class="line"><a id="l00535" name="l00535"></a><span class="lineno">  535</span><span class="preprocessor">#endif </span><span class="comment">// !RWLENVELOPE_HPP</span></div>
+<div class="line"><a id="l00557" name="l00557"></a><span class="lineno">  557</span>} <span class="comment">// namespace siddiqsoft</span></div>
+<div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span> </div>
+<div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span><span class="preprocessor">#endif </span><span class="comment">// !RWLENVELOPE_HPP</span></div>
 <div class="ttc" id="aclasssiddiqsoft_1_1RWLEnvelope_html_aa2b4b6a2d629826612c8fd9e8ecbfce0"><div class="ttname"><a href="classsiddiqsoft_1_1RWLEnvelope.html#aa2b4b6a2d629826612c8fd9e8ecbfce0">siddiqsoft::RWLEnvelope::operator=</a></div><div class="ttdeci">RWLEnvelope &amp; operator=(RWLEnvelope const &amp;)=delete</div><div class="ttdoc">Copy assignment operator (deleted).</div></div>
 <div class="ttc" id="aconceptsiddiqsoft_1_1MutateCallbackNoexcept_html"><div class="ttname"><a href="conceptsiddiqsoft_1_1MutateCallbackNoexcept.html">siddiqsoft::MutateCallbackNoexcept</a></div><div class="ttdoc">Concept to enforce that callbacks do not throw exceptions (for mutable access).</div><div class="ttdef"><b>Definition</b> <a href="#l00107">RWLEnvelope.hpp:107</a></div></div>
 <div class="ttc" id="aconceptsiddiqsoft_1_1ObserveCallbackNoexcept_html"><div class="ttname"><a href="conceptsiddiqsoft_1_1ObserveCallbackNoexcept.html">siddiqsoft::ObserveCallbackNoexcept</a></div><div class="ttdoc">Concept to enforce that callbacks do not throw exceptions (for const/read-only access).</div><div class="ttdef"><b>Definition</b> <a href="#l00092">RWLEnvelope.hpp:92</a></div></div>

@@ -18,6 +18,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -103,6 +104,8 @@ $(function(){initNavTree('classsiddiqsoft_1_1RWLEnvelope.html','','classsiddiqso
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ac1674b4aa1dd36b3de1b28dabed5be9a" id="r_ac1674b4aa1dd36b3de1b28dabed5be9a"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ac1674b4aa1dd36b3de1b28dabed5be9a">RWLEnvelope</a> (RWLEnvelope&lt; ContainerType &gt; &amp;&amp;src) noexcept</td></tr>
 <tr class="memitem:ac8366fa7161079e005a978ea9d1d668b" id="r_ac8366fa7161079e005a978ea9d1d668b"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ac8366fa7161079e005a978ea9d1d668b">RWLEnvelope</a> (ContainerType &amp;&amp;src)</td></tr>
+<tr class="memitem:a074cefec2c7f8e30e6745ac21a3761d7" id="r_a074cefec2c7f8e30e6745ac21a3761d7"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
+<tr class="memitem:a074cefec2c7f8e30e6745ac21a3761d7 template"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a074cefec2c7f8e30e6745ac21a3761d7">RWLEnvelope</a> (std::initializer_list&lt; T &gt; init)</td></tr>
 <tr class="memitem:a79082e2414062e7934e98c064db96b1b" id="r_a79082e2414062e7934e98c064db96b1b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a79082e2414062e7934e98c064db96b1b">reassign</a> (ContainerType &amp;&amp;src)</td></tr>
 <tr class="memitem:aa1e54fa4d7272a63b204069a94ac5fa2" id="r_aa1e54fa4d7272a63b204069a94ac5fa2"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aa1e54fa4d7272a63b204069a94ac5fa2">RWLEnvelope</a> (const ContainerType &amp;arg)</td></tr>
 <tr class="memitem:aa2b4b6a2d629826612c8fd9e8ecbfce0" id="r_aa2b4b6a2d629826612c8fd9e8ecbfce0"><td class="memItemLeft">RWLEnvelope &amp;&#160;</td><td class="memItemRight"><a class="el" href="#aa2b4b6a2d629826612c8fd9e8ecbfce0">operator=</a> (RWLEnvelope const &amp;)=delete</td></tr>
@@ -191,7 +194,7 @@ Limitations</h1>
 <p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00180">180</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a8910f89142cf6341bad2bd724edaac10" name="a8910f89142cf6341bad2bd724edaac10"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8910f89142cf6341bad2bd724edaac10">&#9670;&#160;</a></span>RWLEnvelope() <span class="overload">[1/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8910f89142cf6341bad2bd724edaac10">&#9670;&#160;</a></span>RWLEnvelope() <span class="overload">[1/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -220,7 +223,7 @@ template&lt;typename ContainerType&gt; </div>
 </div>
 </div>
 <a id="ac1674b4aa1dd36b3de1b28dabed5be9a" name="ac1674b4aa1dd36b3de1b28dabed5be9a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac1674b4aa1dd36b3de1b28dabed5be9a">&#9670;&#160;</a></span>RWLEnvelope() <span class="overload">[2/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1674b4aa1dd36b3de1b28dabed5be9a">&#9670;&#160;</a></span>RWLEnvelope() <span class="overload">[2/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -249,7 +252,7 @@ template&lt;typename ContainerType&gt; </div>
 </div>
 </div>
 <a id="ac8366fa7161079e005a978ea9d1d668b" name="ac8366fa7161079e005a978ea9d1d668b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac8366fa7161079e005a978ea9d1d668b">&#9670;&#160;</a></span>RWLEnvelope() <span class="overload">[3/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8366fa7161079e005a978ea9d1d668b">&#9670;&#160;</a></span>RWLEnvelope() <span class="overload">[3/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -277,8 +280,39 @@ template&lt;typename ContainerType&gt; </div>
 
 </div>
 </div>
+<a id="a074cefec2c7f8e30e6745ac21a3761d7" name="a074cefec2c7f8e30e6745ac21a3761d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a074cefec2c7f8e30e6745ac21a3761d7">&#9670;&#160;</a></span>RWLEnvelope() <span class="overload">[4/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ContainerType&gt; </div>
+<div class="memtemplate">
+template&lt;typename T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classsiddiqsoft_1_1RWLEnvelope.html">siddiqsoft::RWLEnvelope</a>&lt; ContainerType &gt;::RWLEnvelope </td>
+          <td>(</td>
+          <td class="paramtype">std::initializer_list&lt; T &gt;</td>          <td class="paramname"><span class="paramname"><em>init</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel explicit">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00297">297</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
+
+</div>
+</div>
 <a id="aa1e54fa4d7272a63b204069a94ac5fa2" name="aa1e54fa4d7272a63b204069a94ac5fa2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa1e54fa4d7272a63b204069a94ac5fa2">&#9670;&#160;</a></span>RWLEnvelope() <span class="overload">[4/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1e54fa4d7272a63b204069a94ac5fa2">&#9670;&#160;</a></span>RWLEnvelope() <span class="overload">[5/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -302,7 +336,7 @@ template&lt;typename ContainerType&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00314">314</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00338">338</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
 
 </div>
 </div>
@@ -338,7 +372,7 @@ template&lt;typename Callback, typename... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00391">391</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00415">415</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
 
 </div>
 </div>
@@ -373,7 +407,7 @@ template&lt;typename Callback, typename... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00353">353</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00377">377</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
 
 </div>
 </div>
@@ -434,7 +468,7 @@ template&lt;typename ContainerType&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00454">454</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00478">478</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
 
 </div>
 </div>
@@ -463,7 +497,7 @@ template&lt;typename ContainerType&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00293">293</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00317">317</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
 
 </div>
 </div>
@@ -492,7 +526,7 @@ template&lt;typename ContainerType&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00423">423</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00447">447</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
 
 </div>
 </div>
@@ -521,7 +555,7 @@ template&lt;typename ContainerType&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00479">479</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RWLEnvelope_8hpp_source.html#l00503">503</a> of file <a class="el" href="RWLEnvelope_8hpp_source.html">RWLEnvelope.hpp</a>.</p>
 
 </div>
 </div>
