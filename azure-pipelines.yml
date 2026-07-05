@@ -94,7 +94,7 @@ parameters:
   # Testing
   - name: RunTests
     type: boolean
-    default: false
+    default: true
     displayName: "Run tests after building"
 
   # Publishing

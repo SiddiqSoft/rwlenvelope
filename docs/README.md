@@ -14,7 +14,8 @@ This is the **complete API documentation** for RWLEnvelope, a header-only C++ te
 
 ### Quick Navigation
 
-- **[API Reference](index.html)** - Full API documentation with examples
+- **[API Reference](doxygen/html/index.html)** - Full API documentation with examples
+- **[RWLEnvelope Class](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html)** - Main class documentation
 - **[GitHub Repository](https://github.com/SiddiqSoft/RWLEnvelope)** - Source code and issues
 - **[Project README](https://github.com/SiddiqSoft/RWLEnvelope#readme)** - Quick start guide
 
@@ -23,26 +24,37 @@ This is the **complete API documentation** for RWLEnvelope, a header-only C++ te
 RWLEnvelope simplifies thread-safe access to shared objects by:
 
 1. **Wrapping your object** with automatic lock management
-2. **Providing clear APIs**: `observe()` for reads, `mutate()` for writes
+2. **Providing clear APIs**: [`observe()`](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a8c8c8c8c8c8c8c8) for reads, [`mutate()`](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a9d9d9d9d9d9d9d9) for writes
 3. **Ensuring thread safety**: Multiple concurrent readers, exclusive writers
 4. **Maintaining exception safety**: Locks released properly even if callbacks throw
 
 ### Quick Example
 
+See the [RWLEnvelope class documentation](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html) for complete API details.
+
 ```cpp
 #include "siddiqsoft/RWLEnvelope.hpp"
 
-siddiqsoft::RWLEnvelope<std::map<std::string, int>> data;
+using CustomType = std::map<std::string,int>;
+// Declare a map as container and initialize it with some values
+// Using initializer list constructor for convenient initialization.
+// Note the brace-count as we use brace initializer to construct the RWLEnvelope
+// while constructing its internal storage with the std::map initializer!
+siddiqsoft::RWLEnvelope<CustomType> data({{"key", 1010},
+                                          {"key2", 2020},
+                                          {"key3", 3030}});
 
-// Read-only access (multiple threads can do this concurrently)
-data.observe([](const auto& m) noexcept {
-    return m.find("key") != m.end();
+// Read-only access
+auto val = data.observe([](const auto& m) noexcept -> auto {
+    return m.value("key", 0);
 });
 
-// Read-write access (exclusive access)
+// Read-write access
 data.mutate([](auto& m) noexcept {
     m["key"] = 42;
 });
+
+std::println(std::cerr, "Contents: {}", data.snapshot());
 ```
 
 ### Key Features
@@ -55,13 +67,13 @@ data.mutate([](auto& m) noexcept {
 
 ### Documentation Structure
 
-The documentation is organized as follows:
+The documentation is organized as follows (all links point to the Doxygen generated site):
 
-- **Main Page** - Overview and core concepts
-- **Classes** - RWLEnvelope class template documentation
-- **Namespaces** - siddiqsoft namespace
-- **Files** - Source file listings
-- **Examples** - Code examples and usage patterns
+- **[Main Page](doxygen/html/index.html)** - Overview and core concepts
+- **[Classes](doxygen/html/annotated.html)** - RWLEnvelope class template documentation
+- **[Namespaces](doxygen/html/namespaces.html)** - siddiqsoft namespace
+- **[Files](doxygen/html/files.html)** - Source file listings
+- **[Concepts](doxygen/html/namespacesiddiqsoft.html)** - ObserveCallbackNoexcept and MutateCallbackNoexcept
 
 ### Requirements
 
@@ -81,16 +93,34 @@ Copy `include/siddiqsoft/RWLEnvelope.hpp` to your project.
 
 ### Getting Started
 
-1. **Read the [API Reference](index.html)** for complete documentation
-2. **Check the [Examples](index.html)** for common usage patterns
-3. **Review [Performance Considerations](index.html)** for best practices
-4. **See [Limitations](index.html)** for important constraints
+1. **Read the [API Reference](doxygen/html/index.html)** for complete documentation
+2. **Check the [RWLEnvelope Class](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html)** for the main class documentation
+3. **Review [Member Functions](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#public-methods)** for available methods
+4. **See [Concepts](doxygen/html/namespacesiddiqsoft.html)** for callback requirements
+
+### API Methods
+
+The [RWLEnvelope class](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html) provides the following key methods:
+
+- **[`observe()`](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a8c8c8c8c8c8c8c8)** - Perform read-only operations with shared lock
+- **[`mutate()`](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a9d9d9d9d9d9d9d9)** - Perform read-write operations with exclusive lock
+- **[`readLock()`](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a7e7e7e7e7e7e7e7)** - Acquire shared lock directly
+- **[`writeLock()`](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a6f6f6f6f6f6f6f6)** - Acquire exclusive lock directly
+- **[`snapshot()`](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a5e5e5e5e5e5e5e5)** - Get a copy of the enclosed object
+- **[`reassign()`](doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a4d4d4d4d4d4d4d4)** - Replace the enclosed object
+
+### Concepts
+
+The library uses C++20 concepts to enforce callback requirements:
+
+- **[`ObserveCallbackNoexcept`](doxygen/html/namespacesiddiqsoft.html)** - Concept for read-only callbacks
+- **[`MutateCallbackNoexcept`](doxygen/html/namespacesiddiqsoft.html)** - Concept for read-write callbacks
 
 ### Support
 
 - **Issues**: [GitHub Issues](https://github.com/SiddiqSoft/RWLEnvelope/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/SiddiqSoft/RWLEnvelope/discussions)
-- **Documentation**: This site (generated with Doxygen Awesome)
+- **Documentation**: [Doxygen Generated Site](doxygen/html/index.html) (generated with Doxygen Awesome)
 
 ### License
 

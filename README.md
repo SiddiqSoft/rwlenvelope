@@ -15,15 +15,14 @@ RWLEnvelope : A simple read-writer lock envelope
 ```cpp
 #include "siddiqsoft/RWLEnvelope.hpp"
 
+using CustomType = std::map<std::string,int>;
 // Declare a map as container and initialize it with some values
 // Using initializer list constructor for convenient initialization.
-Note the brace-count as we use brace initializer to construct the RWLEnvelope
+// Note the brace-count as we use brace initializer to construct the RWLEnvelope
 // while constructing its internal storage with the std::map initializer!
-siddiqsoft::RWLEnvelope<std::map<std::string, int>> data({
-    {"key", 1010},
-    {"key2", 2020},
-    {"key3", 3030}
-});
+siddiqsoft::RWLEnvelope<CustomType> data({{"key", 1010},
+                                          {"key2", 2020},
+                                          {"key3", 3030}});
 
 // Read-only access
 auto val = data.observe([](const auto& m) noexcept -> auto {
@@ -53,11 +52,11 @@ std::println(std::cerr, "Contents: {}", data.snapshot());
 **📖 [Complete API Documentation](https://siddiqsoft.github.io/rwlenvelope/)**
 
 The full documentation includes:
-- Detailed API reference
-- Usage patterns and examples
-- Performance considerations
-- Thread safety guarantees
-- Requirements and limitations
+- [Detailed API reference](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/index.html)
+- [RWLEnvelope class documentation](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html)
+- [Usage patterns and examples](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html)
+- [Thread safety guarantees](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html)
+- [Requirements and limitations](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html)
 
 ## Installation
 
@@ -86,6 +85,8 @@ data.observe([](const auto& m) noexcept {
 });
 ```
 
+See [`observe()` documentation](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a8c8c8c8c8c8c8c8) for details.
+
 ### Exclusive Writer
 ```cpp
 // Only one thread can write at a time
@@ -93,6 +94,8 @@ data.mutate([](auto& m) noexcept {
     m["key"] = 42;
 });
 ```
+
+See [`mutate()` documentation](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a9d9d9d9d9d9d9d9) for details.
 
 ### Direct Lock Access
 ```cpp
@@ -103,12 +106,16 @@ if (auto [map, lock] = data.writeLock(); lock) {
 }
 ```
 
+See [`readLock()`](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a7e7e7e7e7e7e7e7) and [`writeLock()`](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a6f6f6f6f6f6f6f6) documentation.
+
 ### Snapshot for External Processing
 ```cpp
 // Get a copy to process outside the lock
 std::vector<int> copy = data.snapshot();
 std::sort(copy.begin(), copy.end());
 ```
+
+See [`snapshot()` documentation](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html#a5e5e5e5e5e5e5e5) for details.
 
 ### Initializer List Construction
 ```cpp
@@ -129,6 +136,8 @@ siddiqsoft::RWLEnvelope<nlohmann::json> doc({
     {"active", true}
 });
 ```
+
+See [constructor documentation](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html) for all available constructors.
 
 ## Real-World Examples
 
@@ -200,7 +209,8 @@ BSD 3-Clause License - See LICENSE file for details
 
 ## Resources
 
-- **[Full API Documentation](https://siddiqsoft.github.io/rwlenvelope/)** - Complete reference and examples
+- **[Full API Documentation](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/index.html)** - Complete reference and examples
+- **[RWLEnvelope Class](https://siddiqsoft.github.io/rwlenvelope/doxygen/html/classsiddiqsoft_1_1RWLEnvelope.html)** - Main class documentation
 - **[GitHub Repository](https://github.com/SiddiqSoft/RWLEnvelope)** - Source code and issues
 - **[C++ std::shared_mutex](https://en.cppreference.com/w/cpp/thread/shared_mutex)** - Standard library reference
 
