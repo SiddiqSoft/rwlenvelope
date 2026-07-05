@@ -110,7 +110,7 @@ parameters:
 
   - name: DeployPages
     type: boolean
-    default: true
+    default: false
     displayName: "Deploy documentation to GitHub Pages (auto-enabled on main/master)"
 
   # Cleanup
