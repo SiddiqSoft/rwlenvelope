@@ -215,8 +215,7 @@ stages:
     dependsOn:
       - Windows
       - Linux
-    #condition: and(or(eq(${{ variables.PublishGitHub }}, true), eq(${{ variables.PublishNuGet }}, true)), succeeded())
-    condition: succeeded()
+    condition: and(or(eq(${{ variables.PublishGitHub }}, true), eq(${{ variables.PublishNuGet }}, true)), succeeded())
     jobs:
       - ${{ if eq(variables.PublishNuGet, true) }}:
         - template: .azure/az-publish-nuget.yml
