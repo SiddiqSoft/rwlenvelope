@@ -28,7 +28,7 @@ TEST(examples, ConstructWithInitializers)
 {
 	using CustomMapType = std::map<std::string, int>;
 	// Delcare a map as container and initialize it with some values..
-	siddiqsoft::RWLEnvelope<CustomMapType> data{{{"key", 1010}, {"key2", 2020}, {"key3", 3030}}};
+	siddiqsoft::RWLEnvelope<CustomMapType> data {{{"key", 1010}, {"key2", 2020}, {"key3", 3030}}};
 
 	// Read-only access
 	auto val = data.observe([](const auto& m) noexcept { return m.at("key"); });
@@ -38,6 +38,27 @@ TEST(examples, ConstructWithInitializers)
 
 	std::println(std::cerr, "Contents: {}", data.snapshot());
 }
+
+TEST(examples, ConstructWithInitializersJson)
+{
+	// Delcare a map as container and initialize it with some values..
+	siddiqsoft::RWLEnvelope<nlohmann::json> data {{{"userAgent", "siddiqsoft.rwlenvelope/2"},
+	                                               {"trace", false},
+	                                               {"id", 99},
+	                                               {"connectTimeout", 0L},
+	                                               {"timeout", 0L},
+	                                               {"downloadDirectory", nullptr},
+	                                               {"headers", nullptr}}};
+
+	// Read-only access
+	auto val = data.observe([](const auto& m) noexcept { return m.at("trace"); });
+
+	// Read-write access
+	data.mutate([](auto& m) noexcept { m["trace"] = false; });
+
+	std::println(std::cerr, "Contents: {}", data.snapshot().dump());
+}
+
 
 TEST(examples, ConstructWithInitializers2)
 {
