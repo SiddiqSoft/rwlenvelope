@@ -177,7 +177,7 @@ namespace siddiqsoft
 	/// - All callbacks must be marked noexcept
 	template <typename ContainerType>
 		requires std::copy_constructible<ContainerType>
-	class RWLEnvelope
+	class RWLEnvelope final
 	{
 		using RWLock = std::unique_lock<std::shared_mutex>;
 		using RLock  = std::shared_lock<std::shared_mutex>;

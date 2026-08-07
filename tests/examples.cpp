@@ -43,7 +43,7 @@ TEST(examples, ConstructWithInitializersJson)
 {
 	// Delcare a map as container and initialize it with some values..
 	siddiqsoft::RWLEnvelope<nlohmann::json> data {{{"userAgent", "siddiqsoft.rwlenvelope/2"},
-	                                               {"trace", false},
+	                                               {"trace", true},
 	                                               {"id", 99},
 	                                               {"connectTimeout", 0L},
 	                                               {"timeout", 0L},
@@ -52,9 +52,14 @@ TEST(examples, ConstructWithInitializersJson)
 
 	// Read-only access
 	auto val = data.observe([](const auto& m) noexcept { return m.at("trace"); });
-
+	EXPECT_EQ(true, val);
 	// Read-write access
 	data.mutate([](auto& m) noexcept { m["trace"] = false; });
+
+	std::println(std::cerr, "After mutate Contents: {}", data.snapshot().dump());
+
+	auto val2 = data.observe([](const auto& m) noexcept { return m.at("trace"); });
+	EXPECT_EQ(false, val2);
 
 	std::println(std::cerr, "Contents: {}", data.snapshot().dump());
 }
