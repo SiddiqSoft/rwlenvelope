@@ -49,6 +49,9 @@ TEST(examples, ConstructWithInitializersJson)
 	                                               {"timeout", 0L},
 	                                               {"downloadDirectory", nullptr},
 	                                               {"headers", nullptr}}};
+    auto config   = data.snapshot();
+    auto newUserAgent  = config.value("userAgent", config.value("/headers/User-Agent"_json_pointer, ""));
+	EXPECT_EQ("siddiqsoft.rwlenvelope/2", newUserAgent);
 
 	// Read-only access
 	auto val = data.observe([](const auto& m) noexcept { return m.at("trace"); });
